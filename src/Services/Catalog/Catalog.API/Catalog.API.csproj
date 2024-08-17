@@ -19,4 +19,10 @@
     <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks\BuildingBlocks.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Products\DeleteUpdate\" />
+    <Folder Include="Products\GetProductById\" />
+    <Folder Include="Products\UpdateProduct\" />
+  </ItemGroup>
+
 </Project>

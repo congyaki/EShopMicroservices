@@ -4,7 +4,7 @@ using System.Windows.Input;
 namespace Catalog.API.Products.CreateProduct
 {
     public record CreateProductCommand(string Name, List<string> Category, string Description, string ImageFile, decimal Price) : ICommand<Guid>;
-    public class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
+    internal class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
     {
         private readonly IMapper _mapper;
         private readonly IDocumentSession _sesstion;
