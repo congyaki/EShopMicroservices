@@ -4,25 +4,19 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dd375a4e-2749-4bcf-b810-f8ece32e72f1</UserSecretsId>
+    <UserSecretsId>e8da8e6c-c6e8-498a-b11e-51730a657861</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\..\..</DockerfileContext>
-    <DockerComposeProjectPath>..\..\..\docker-compose.dcproj</DockerComposeProjectPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Marten" Version="7.26.1" />
+    <PackageReference Include="Marten" Version="7.26.2" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.20.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks\BuildingBlocks.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Products\DeleteUpdate\" />
-    <Folder Include="Products\GetProductById\" />
-    <Folder Include="Products\UpdateProduct\" />
   </ItemGroup>
 
 </Project>

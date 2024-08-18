@@ -30,9 +30,13 @@ namespace Catalog.API.Controllers
 
         #region R
         [HttpGet]
-        public async Task<GetProductsResult> GetList(GetProductsQuery query)
+        public async Task<GetProductsResult> GetList([FromQuery] int? pageNumber = 1, int? pageSize = 10)
         {
-            var data = await _mediator.Send(query);
+            var data = await _mediator.Send(new GetProductsQuery()
+            {
+                pageNumber = pageNumber,
+                pageSize = pageSize
+            });
 
             return data;
         }
