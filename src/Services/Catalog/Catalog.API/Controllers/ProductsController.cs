@@ -3,6 +3,7 @@ using Catalog.API.Products.CreateProduct;
 using Catalog.API.Products.DeleteProducts;
 using Catalog.API.Products.GetProductById;
 using Catalog.API.Products.GetProducts;
+using Catalog.API.Products.GetProductsByCategory;
 using Catalog.API.Products.UpdateProduct;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,15 @@ namespace Catalog.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var data = await _mediator.Send(new GetProductByIdQuery(id));
+
+            return Ok(data);
+        }
+
+        [HttpGet]
+        [Route("get-by-category")]
+        public async Task<IActionResult> GetByCategory(string category)
+        {
+            var data = await _mediator.Send(new GetProductsByCategoryQuery(category));
 
             return Ok(data);
         }
