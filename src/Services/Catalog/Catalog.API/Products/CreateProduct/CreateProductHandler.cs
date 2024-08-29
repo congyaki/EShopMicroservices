@@ -1,9 +1,23 @@
 ﻿using Catalog.API.Models;
+using FluentValidation;
 using System.Windows.Input;
 
 namespace Catalog.API.Products.CreateProduct
 {
     public record CreateProductCommand(string Name, List<string> Category, string Description, string ImageFile, decimal Price) : ICommand<Guid>;
+
+    public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+    {
+        public CreateProductCommandValidator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Không được để trống tên");
+            RuleFor(x => x.Category) 
+                .NotEmpty().WithMessage("Không được để trống danh mục");
+
+        }
+    }
+
     public record CreateProductResult(Guid Id);
     internal class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
     {
