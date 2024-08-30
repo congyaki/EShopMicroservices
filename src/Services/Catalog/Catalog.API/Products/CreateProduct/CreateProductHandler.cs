@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace Catalog.API.Products.CreateProduct
 {
-    public record CreateProductCommand(string Name, List<string> Category, string Description, string ImageFile, decimal Price) : ICommand<Guid>;
+    public record CreateProductCommand(string? Name, List<string>? Category, string? Description, string? ImageFile, decimal? Price) : ICommand<Guid>;
 
     public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
     {
