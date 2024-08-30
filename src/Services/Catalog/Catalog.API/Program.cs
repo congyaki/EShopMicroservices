@@ -1,5 +1,3 @@
-using BuildingBlocks.Behaviors;
-using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +27,8 @@ builder.Services.AddMarten(opts =>
 
 var app = builder.Build();
 
+app.UseMiddleware<CustomExceptionHandler>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -40,5 +40,4 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
