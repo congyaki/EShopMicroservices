@@ -4,7 +4,7 @@ using Marten.Pagination;
 
 namespace Catalog.API.Products.GetProducts
 {
-    public record GetProductsQuery(int? pageNumber = 1, int? pageSize = 10) : IQuery<GetProductsResult>;
+    public record GetProductsQuery(int? PageNumber = 1, int? PageSize = 10) : IQuery<GetProductsResult>;
 
     public record GetProductsResult(IEnumerable<Product> Products);
 
@@ -20,7 +20,7 @@ namespace Catalog.API.Products.GetProducts
 
         public async Task<GetProductsResult> Handle(GetProductsQuery query, CancellationToken cancellationToken)
         {
-            var products = await _session.Query<Product>().ToPagedListAsync(query.pageNumber ?? 1, query.pageSize ?? 10, cancellationToken);
+            var products = await _session.Query<Product>().ToPagedListAsync(query.PageNumber ?? 1, query.PageSize ?? 10, cancellationToken);
             var res = _mapper.Map<GetProductsResult>(products);
             return res;
         }

@@ -29,8 +29,8 @@ namespace Catalog.API.Controllers
         {
             var data = await _mediator.Send(new GetProductsQuery()
             {
-                pageNumber = pageNumber,
-                pageSize = pageSize
+                PageNumber = pageNumber,
+                PageSize = pageSize
             });
 
             return Ok(data);
