@@ -24,21 +24,16 @@ namespace Catalog.API.Controllers
 
         #region R
         [HttpGet]
-        [Route("get-list")]
-        public async Task<IActionResult> GetList([FromQuery] int? pageNumber = 1, int? pageSize = 10)
+        public async Task<IActionResult> GetProducts([FromQuery] GetProductsQuery request)
         {
-            var data = await _mediator.Send(new GetProductsQuery()
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            });
+            var data = await _mediator.Send(request);
 
             return Ok(data);
         }
 
         [HttpGet]
-        [Route("get-by-id")]
-        public async Task<IActionResult> GetById(Guid id)
+        [Route("{id}")]
+        public async Task<IActionResult> GetProductById(Guid id)
         {
             var data = await _mediator.Send(new GetProductByIdQuery(id));
 
@@ -46,8 +41,8 @@ namespace Catalog.API.Controllers
         }
 
         [HttpGet]
-        [Route("get-by-category")]
-        public async Task<IActionResult> GetByCategory(string category)
+        [Route("category/{category}")]
+        public async Task<IActionResult> GetProductByCategory(string category)
         {
             var data = await _mediator.Send(new GetProductsByCategoryQuery(category));
 
@@ -57,8 +52,7 @@ namespace Catalog.API.Controllers
 
         #region CUD
         [HttpPost]
-        [Route("create")]
-        public async Task<IActionResult> Create(CreateProductCommand command)
+        public async Task<IActionResult> CreateProduct(CreateProductCommand command)
         {
             var data = await _mediator.Send(command);
 
@@ -66,8 +60,7 @@ namespace Catalog.API.Controllers
         }
 
         [HttpPut]
-        [Route("update")]
-        public async Task<IActionResult> Update(UpdateProductCommand command)
+        public async Task<IActionResult> UpdateProduct(UpdateProductCommand command)
         {
             var data = await _mediator.Send(command);
 
@@ -75,8 +68,8 @@ namespace Catalog.API.Controllers
         }
 
         [HttpDelete]
-        [Route("delete")]
-        public async Task<IActionResult> Delete(IEnumerable<Guid> ids)
+        [Route("")]
+        public async Task<IActionResult> Delete([FromBody] IEnumerable<Guid> ids)
         {
             var data = await _mediator.Send(new DeleteProductsCommand(ids));
 

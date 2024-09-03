@@ -3,6 +3,14 @@ namespace Catalog.API.Products.DeleteProducts
 {
     public record DeleteProductsCommand(IEnumerable<Guid> Ids) : ICommand<DeleteProductResult>;
     public record DeleteProductResult(bool IsSuccess);
+    public class DeleteProductsCommandValidator : AbstractValidator<DeleteProductsCommand>
+    {
+        public DeleteProductsCommandValidator()
+        {
+            RuleFor(e => e.Ids)
+                .NotEmpty().WithMessage("Không được để trống Id");
+        }
+    }
     public class DeleteProductsCommandHandler : ICommandHandler<DeleteProductsCommand, DeleteProductResult>
     {
         private readonly IDocumentSession _session;

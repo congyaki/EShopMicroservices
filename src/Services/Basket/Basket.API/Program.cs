@@ -1,5 +1,4 @@
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -16,11 +15,13 @@ builder.Services.AddValidatorsFromAssembly(assembly);
 
 builder.Services.AddAutoMapper(assembly);
 
-//builder.Services.AddMarten(opts =>
-//{
-//    opts.Connection(builder.Configuration.GetConnectionString("Database")!);
-//}).UseLightweightSessions();
+builder.Services.AddMarten(opts =>
+{
+    opts.Connection(builder.Configuration.GetConnectionString("Database")!);
+    opts.Schema.For<ShoppingCart>().Identity(e => e.UserName);
+}).UseLightweightSessions();
 
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
 //if (builder.Environment.IsDevelopment())
 //{
 //    builder.Services.InitializeMartenWith<CatalogInitialData>();
@@ -37,7 +38,7 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
-//app.UseMiddleware<CustomExceptionHandler>();
+app.UseMiddleware<CustomExceptionHandler>();
 
 //app.UseHealthChecks("/health",
 //    new HealthCheckOptions
