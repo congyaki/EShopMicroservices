@@ -7,12 +7,10 @@ namespace Catalog.API.Products.GetProductsByCategory
     public record GetProductsByCategoryQuery(string Category) : IQuery<GetProductsByCategoryResult>;
     public class GetProductsByCategoryQueryHandler : IQueryHandler<GetProductsByCategoryQuery, GetProductsByCategoryResult>
     {
-        private readonly IMapper _mapper;
         private readonly IDocumentSession _session;
 
-        public GetProductsByCategoryQueryHandler(IMapper mapper, IDocumentSession session)
+        public GetProductsByCategoryQueryHandler(IDocumentSession session)
         {
-            _mapper = mapper;
             _session = session;
         }
 

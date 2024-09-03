@@ -1,7 +1,6 @@
 ﻿
 namespace Catalog.API.Products.DeleteProducts
 {
-
     public record DeleteProductsCommand(IEnumerable<Guid> Ids) : ICommand<DeleteProductResult>;
     public record DeleteProductResult(bool IsSuccess);
     public class DeleteProductsCommandHandler : ICommandHandler<DeleteProductsCommand, DeleteProductResult>

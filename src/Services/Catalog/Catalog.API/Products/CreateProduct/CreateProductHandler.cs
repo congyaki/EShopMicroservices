@@ -6,19 +6,24 @@ namespace Catalog.API.Products.CreateProduct
 {
     public record CreateProductCommand(string? Name, List<string>? Category, string? Description, string? ImageFile, decimal? Price) : ICommand<Guid>;
 
+    public record CreateProductResult(Guid Id);
+
     public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
     {
         public CreateProductCommandValidator()
         {
-            RuleFor(x => x.Name)
+            RuleFor(e => e.Name)
                 .NotEmpty().WithMessage("Không được để trống tên");
-            RuleFor(x => x.Category) 
+            RuleFor(e => e.Category) 
                 .NotEmpty().WithMessage("Không được để trống danh mục");
+            RuleFor(e => e.ImageFile)
+                .NotEmpty().WithMessage("Không được để trống ảnh");
+            RuleFor(e => e.Price)
+                .NotNull().WithMessage("Không được để trống giá");
 
         }
     }
 
-    public record CreateProductResult(Guid Id);
     internal class CreateProductCommandHandler : ICommandHandler<CreateProductCommand, Guid>
     {
         private readonly IMapper _mapper;

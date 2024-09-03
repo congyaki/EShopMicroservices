@@ -7,3 +7,6 @@ global using BuildingBlocks.Exceptions.Handler;
 global using BuildingBlocks.Behaviors;
 global using Catalog.API.Exceptions;
 global using Catalog.API.Models;
+global using Catalog.API.Data;
+global using HealthChecks.UI.Client;
+global using Microsoft.AspNetCore.Diagnostics.HealthChecks;

@@ -3,9 +3,8 @@ using Catalog.API.Models;
 
 namespace Catalog.API.Products.GetProductById
 {
-    public record GetProductByIdResult(Product product);
-
     public record GetProductByIdQuery(Guid Id) : ICommand<GetProductByIdResult>;
+    public record GetProductByIdResult(Product Product);
     internal class GetProductByIdQueryHandler : ICommandHandler<GetProductByIdQuery, GetProductByIdResult>
     {
         private readonly IMapper _mapper;
