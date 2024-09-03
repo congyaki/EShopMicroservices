@@ -21,7 +21,7 @@ namespace Catalog.API.Products.GetProducts
         public async Task<GetProductsResult> Handle(GetProductsQuery query, CancellationToken cancellationToken)
         {
             var products = await _session.Query<Product>().ToPagedListAsync(query.PageNumber ?? 1, query.PageSize ?? 10, cancellationToken);
-            var res = _mapper.Map<GetProductsResult>(products);
+            var res = new GetProductsResult(products);
             return res;
         }
     }
