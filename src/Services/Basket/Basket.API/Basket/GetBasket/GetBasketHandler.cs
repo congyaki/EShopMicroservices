@@ -11,7 +11,7 @@ namespace Basket.API.Basket.GetBasket
     {
         public async Task<GetBasketResult> Handle(GetBasketQuery request, CancellationToken cancellationToken)
         {
-
+            throw new NotImplementedException();
         }
     }
 }
