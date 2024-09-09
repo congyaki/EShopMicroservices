@@ -1,3 +1,7 @@
+using Discount.gRPC.Data;
+using Discount.gRPC.Services;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Additional configuration is required to successfully run gRPC on macOS.
@@ -6,6 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddGrpc();
 builder.Services.AddGrpcReflection();
+
+builder.Services.AddDbContext<DiscountContext>(opts =>
+{
+    opts.UseSqlite(builder.Configuration.GetConnectionString("Database"));
+});
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -14,6 +23,6 @@ if (app.Environment.IsDevelopment())
 }
 
 // Configure the HTTP request pipeline.
-
+app.MapGrpcService<DiscountService>();
 
 app.Run();
