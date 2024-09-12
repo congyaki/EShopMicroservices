@@ -15,12 +15,17 @@ builder.Services.AddDbContext<DiscountContext>(opts =>
 {
     opts.UseSqlite(builder.Configuration.GetConnectionString("Database"));
 });
-var app = builder.Build();
-if (app.Environment.IsDevelopment())
-{
-    app.MapGrpcReflectionService();
 
-}
+var assembly = typeof(Program).Assembly;
+
+builder.Services.AddAutoMapper(assembly);
+
+var app = builder.Build();
+//if (app.Environment.IsDevelopment())
+//{
+//    app.MapGrpcReflectionService();
+
+//}
 
 // Configure the HTTP request pipeline.
 app.UseMigration();
