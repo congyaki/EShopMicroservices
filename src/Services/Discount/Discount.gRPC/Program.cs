@@ -23,6 +23,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Configure the HTTP request pipeline.
+app.UseMigration();
 app.MapGrpcService<DiscountService>();
 
 app.Run();
