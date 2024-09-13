@@ -51,6 +51,13 @@ namespace Discount.gRPC.Migrations
                             Amount = 100,
                             Description = "Samsung Discount",
                             ProductName = "Samsung 10"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Amount = 50,
+                            Description = "Quạt điện Discount",
+                            ProductName = "Quạt điện"
                         });
                 });
 #pragma warning restore 612, 618

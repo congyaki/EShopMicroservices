@@ -21,11 +21,11 @@ var assembly = typeof(Program).Assembly;
 builder.Services.AddAutoMapper(assembly);
 
 var app = builder.Build();
-//if (app.Environment.IsDevelopment())
-//{
-//    app.MapGrpcReflectionService();
+if (app.Environment.IsDevelopment())
+{
+    app.MapGrpcReflectionService();
 
-//}
+}
 
 // Configure the HTTP request pipeline.
 app.UseMigration();

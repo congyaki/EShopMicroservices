@@ -32,6 +32,11 @@ namespace Discount.gRPC.Migrations
                 table: "Coupons",
                 columns: new[] { "Id", "Amount", "Description", "ProductName" },
                 values: new object[] { 2, 100, "Samsung Discount", "Samsung 10" });
+
+            migrationBuilder.InsertData(
+                table: "Coupons",
+                columns: new[] { "Id", "Amount", "Description", "ProductName" },
+                values: new object[] { 3, 50, "Quạt điện Discount", "Quạt điện" });
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
