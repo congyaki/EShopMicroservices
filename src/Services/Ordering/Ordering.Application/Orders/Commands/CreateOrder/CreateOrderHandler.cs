@@ -42,7 +42,7 @@
                     orderDto.Payment.CardNumber,
                     orderDto.Payment.Expiration,
                     orderDto.Payment.Cvv,
-                    orderDto.Payment.PaymantMethod);
+                    orderDto.Payment.PaymentMethod);
 
             var newOrder = Order.Create(
                 id: OrderId.Of(Guid.NewGuid()),
