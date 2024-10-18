@@ -22,7 +22,10 @@ namespace Catalog.API.Controllers
             _mediator = mediator;
         }
 
-        #region R
+        #region Query
+        [ProducesResponseType(typeof(GetProductsResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet]
         public async Task<IActionResult> GetProducts([FromQuery] GetProductsQuery request)
         {
@@ -31,8 +34,10 @@ namespace Catalog.API.Controllers
             return Ok(data);
         }
 
-        [HttpGet]
-        [Route("{id}")]
+        [ProducesResponseType(typeof(GetProductByIdResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(Guid id)
         {
             var data = await _mediator.Send(new GetProductByIdQuery(id));
@@ -40,8 +45,10 @@ namespace Catalog.API.Controllers
             return Ok(data);
         }
 
-        [HttpGet]
-        [Route("category/{category}")]
+        [ProducesResponseType(typeof(GetProductByIdResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("category/{category}")]
         public async Task<IActionResult> GetProductByCategory(string category)
         {
             var data = await _mediator.Send(new GetProductsByCategoryQuery(category));
@@ -51,6 +58,8 @@ namespace Catalog.API.Controllers
         #endregion
 
         #region CUD
+        [ProducesResponseType(typeof(CreateProductResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
         public async Task<IActionResult> CreateProduct(CreateProductCommand command)
         {
@@ -59,6 +68,9 @@ namespace Catalog.API.Controllers
             return Ok(data);
         }
 
+        [ProducesResponseType(typeof(UpdateProductResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut]
         public async Task<IActionResult> UpdateProduct(UpdateProductCommand command)
         {
@@ -67,8 +79,10 @@ namespace Catalog.API.Controllers
             return Ok(data);
         }
 
+        [ProducesResponseType(typeof(DeleteProductResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpDelete]
-        [Route("")]
         public async Task<IActionResult> Delete([FromBody] IEnumerable<Guid> ids)
         {
             var data = await _mediator.Send(new DeleteProductsCommand(ids));
