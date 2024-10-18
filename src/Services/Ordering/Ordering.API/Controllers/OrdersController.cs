@@ -20,11 +20,12 @@ namespace Ordering.API.Controllers
         {
             _mediator = mediator;
         }
+
         #region Query
+        [ProducesResponseType(typeof(GetOrdersResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOrders(PaginationRequest request)
         {
             var data = await _mediator.Send(new GetOrdersQuery(request));
@@ -32,10 +33,10 @@ namespace Ordering.API.Controllers
             return Ok(data);
         }
 
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status404NotFound)]
-        [HttpGet("{customerId}")]
+        [ProducesResponseType(typeof(GetOrdersByCustomerResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpGet("/customer/{customerId}")]
         public async Task<IActionResult> GetOrdersByCustomerId(Guid customerId)
         {
             var data = await _mediator.Send(new GetOrdersByCustomerIdQuery(customerId));
@@ -43,9 +44,9 @@ namespace Ordering.API.Controllers
             return Ok(data);
         }
 
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(GetOrdersByNameQuery), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{orderName}")]
         public async Task<IActionResult> GetOrdersByName(string orderName)
         {
@@ -57,7 +58,7 @@ namespace Ordering.API.Controllers
 
         #region Command
         [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
         public async Task<IActionResult> CreateOrder(CreateOrderCommand request)
         {
@@ -66,9 +67,9 @@ namespace Ordering.API.Controllers
             return Ok(data);
         }
 
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(UpdateOrderResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpPut]
         public async Task<IActionResult> UpdateOrder(UpdateOrderCommand request)
         {
@@ -77,9 +78,9 @@ namespace Ordering.API.Controllers
             return Ok(data);
         }
 
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(CreateOrderResult), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(DeleteOrderResult), StatusCodes.Status200OK)]
+        [ProducesDefaultResponseType()]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpDelete]
         public async Task<IActionResult> DeleteOrder(DeleteOrderCommand request)
         {
