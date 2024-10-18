@@ -1,8 +1,4 @@
-﻿using Basket.API.Data;
-using BuildingBlocks.CQRS;
-using System.Windows.Input;
-
-namespace Basket.API.Basket.DeleteBasket
+﻿namespace Basket.API.Basket.DeleteBasket
 {
     public record DeleteBasketCommand(string UserName) : ICommand<DeleteBasketResult>;
     public record DeleteBasketResult(bool IsSuccess);

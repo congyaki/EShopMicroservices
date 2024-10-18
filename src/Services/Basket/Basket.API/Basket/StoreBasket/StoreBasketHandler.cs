@@ -1,7 +1,4 @@
-﻿using Basket.API.Data;
-using Basket.API.Models;
-using BuildingBlocks.CQRS;
-using Discount.gRPC;
+﻿using Discount.gRPC;
 
 namespace Basket.API.Basket.StoreBasket
 {

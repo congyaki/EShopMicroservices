@@ -5,3 +5,5 @@ global using Basket.API.Models;
 global using Marten;
 global using Basket.API.Data;
 global using BuildingBlocks.Exceptions.Handler;
+global using Basket.API.Dtos;
+global using BuildingBlocks.CQRS;

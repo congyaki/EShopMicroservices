@@ -1,4 +1,5 @@
-﻿using Basket.API.Basket.DeleteBasket;
+﻿using Basket.API.Basket.CheckoutBasket;
+using Basket.API.Basket.DeleteBasket;
 using Basket.API.Basket.GetBasket;
 using Basket.API.Basket.StoreBasket;
 using MediatR;
@@ -17,10 +18,10 @@ namespace Basket.API.Controllers
             _mediator = mediator;
         }
 
-        #region R
-        
-        [HttpGet]
-        [Route("{userName}")]
+        #region Query
+        [ProducesResponseType(typeof(GetBasketResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpGet("{userName}")]
         public async Task<IActionResult> GetBasketByUserName(string userName)
         {
             var data = await _mediator.Send(new GetBasketQuery(userName));
@@ -30,8 +31,9 @@ namespace Basket.API.Controllers
 
         #endregion
 
-        #region CUD
-
+        #region Command
+        [ProducesResponseType(typeof(GetBasketResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPost]
         public async Task<IActionResult> StoreBasket(StoreBasketCommand command)
         {
@@ -40,8 +42,19 @@ namespace Basket.API.Controllers
             return Ok(data);
         }
 
-        [HttpDelete]
-        [Route("{userName}")]
+        [ProducesResponseType(typeof(CheckoutBasketResult), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpPost("checkout")]
+        public async Task<IActionResult> CheckoutBasket(CheckoutBasketCommand request)
+        {
+            var data = await _mediator.Send(request);
+
+            return Ok(data);
+        }
+        [ProducesResponseType(typeof(GetBasketResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [HttpDelete("{userName}")]
         public async Task<IActionResult> DeleteBasket(string userName)
         {
             var data = await _mediator.Send(new DeleteBasketCommand(userName));
