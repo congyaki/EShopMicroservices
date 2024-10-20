@@ -52,7 +52,7 @@
                     orderDto.Payment.CardNumber,
                     orderDto.Payment.Expiration,
                     orderDto.Payment.Cvv,
-                    orderDto.Payment.PaymantMethod);
+                    orderDto.Payment.PaymentMethod);
 
             order.Update(
                 orderName: OrderName.Of(orderDto.OrderName),
