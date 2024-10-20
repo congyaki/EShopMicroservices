@@ -38,7 +38,7 @@ namespace Basket.API.Basket.CheckoutBasket
                 return new CheckoutBasketResult(false);
             }
 
-            var eventMessage = _mapper.Map<BasketCheckoutEvent>(basket);
+            var eventMessage = _mapper.Map<BasketCheckoutEvent>(command.BasketCheckoutDto);
             eventMessage.TotalPrice = basket.TotalPrice;
 
             await _publishEndpoint.Publish(eventMessage, cancellationToken);

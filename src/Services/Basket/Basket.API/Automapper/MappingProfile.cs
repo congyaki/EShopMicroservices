@@ -7,7 +7,7 @@ namespace Basket.API.Automapper
     {
         public MappingProfile()
         {
-            CreateMap<ShoppingCart, BasketCheckoutEvent>();
+            CreateMap<BasketCheckoutDto, BasketCheckoutEvent>();
         }
     }
 }
