@@ -26,7 +26,7 @@ namespace Ordering.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet]
-        public async Task<IActionResult> GetOrders(PaginationRequest request)
+        public async Task<IActionResult> GetOrders([FromQuery]PaginationRequest request)
         {
             var data = await _mediator.Send(new GetOrdersQuery(request));
 
@@ -37,7 +37,7 @@ namespace Ordering.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("/customer/{customerId}")]
-        public async Task<IActionResult> GetOrdersByCustomerId(Guid customerId)
+        public async Task<IActionResult> GetOrdersByCustomerId([FromQuery] Guid customerId)
         {
             var data = await _mediator.Send(new GetOrdersByCustomerIdQuery(customerId));
 
@@ -48,7 +48,7 @@ namespace Ordering.API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpGet("{orderName}")]
-        public async Task<IActionResult> GetOrdersByName(string orderName)
+        public async Task<IActionResult> GetOrdersByName([FromQuery] string orderName)
         {
             var data = await _mediator.Send(new GetOrdersByNameQuery(orderName));
 
