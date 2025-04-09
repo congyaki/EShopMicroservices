@@ -1,6 +1,6 @@
 ﻿{
   "GlobalConfiguration": {
-    "BaseUrl": "https://localhost:5000",
+    "BaseUrl": "https://api-gateway",
     "RateLimitOptions": {
       "ClientWhitelist": [],
       "EnableRateLimiting": true,
@@ -12,34 +12,19 @@
   },
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/v1/basket/{everything}",
+      "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5001
+          "Host": "auth-api",
+          "Port": 443
         }
       ],
-      "UpstreamPathTemplate": "/api/v1/basket/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "DELETE" ],
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
+        "AuthenticationProviderKey": "",
         "AllowedScopes": []
-      },
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 30
-      },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 5000,
-        "TimeoutValue": 5000
-      },
-      "FileCacheOptions": {
-        "TtlSeconds": 15
       }
     },
     {
@@ -47,27 +32,47 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "localhost",
-          "Port": 5002
+          "Host": "catalog-api",
+          "Port": 443
         }
       ],
       "UpstreamPathTemplate": "/api/v1/catalog/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT" ],
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
-      },
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 50
-      },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 5000,
-        "TimeoutValue": 5000
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/ordering/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "ordering-api",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/v1/ordering/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/basket/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "basket-api",
+          "Port": 443
+        }
+      ],
+      "UpstreamPathTemplate": "/api/v1/basket/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
       }
     }
   ]

@@ -5,6 +5,8 @@ using Ocelot.Cache.CacheManager;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+using OcelotApiGateway.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,19 +18,54 @@ builder.Services.AddSwaggerGen();
 // Đọc file ocelot.json
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
-// JWT Authentication
+// Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
             ValidateIssuer = true,
             ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            ClockSkew = TimeSpan.Zero
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+            ClockSkew = TimeSpan.FromMinutes(1) // Reduce the default 5 min clock skew for tighter security
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                {
+                    context.Response.Headers.Add("Token-Expired", "true");
+                }
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var jti = context.Principal.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti)?.Value;
+
+                // In a real implementation, check if the token has been revoked
+                // using a TokenRevocationService
+                if (string.IsNullOrEmpty(jti))
+                {
+                    context.Fail("JTI claim is missing from token");
+                }
+
+                // You would check revocation here
+                // if (await tokenRevocationService.IsTokenRevokedAsync(jti))
+                // {
+                //     context.Fail("Token has been revoked");
+                // }
+            },
+            OnMessageReceived = context =>
+            {
+                // For WebSockets or SSE support if needed
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -36,6 +73,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddOcelot(builder.Configuration)
     .AddPolly()       // Circuit Breaker
     .AddCacheManager(x => x.WithDictionaryHandle()); // Optional caching
+
+var routeValidator = new RouteConfigValidator(builder.Services.BuildServiceProvider().GetRequiredService<ILogger<RouteConfigValidator>>());
+routeValidator.ValidateRoutes(builder.Configuration);
 
 var app = builder.Build();
 
@@ -46,14 +86,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Configure middleware pipeline
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
-app.UseAuthorization();
-
-// Sử dụng Ocelot Middleware
-await app.UseOcelot();
-
-app.MapControllers();
+app.UseOcelot().Wait();
 
 app.Run();

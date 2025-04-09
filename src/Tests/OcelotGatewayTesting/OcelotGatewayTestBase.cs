@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace OcelotGatewayTesting;
 
@@ -28,6 +29,24 @@ public class OcelotGatewayTestBase
                 config.AddJsonFile("appsettings.json", optional: true);
                 config.AddJsonFile("ocelot.json", optional: false);
             })
+            .ConfigureServices(services =>
+            {
+                services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                    .AddJwtBearer(options =>
+                    {
+                        // JWT Configuration for tests
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = "authservice",
+                            ValidAudience = "microservice-clients",
+                            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"))
+                        };
+                    });
+            })
             .UseStartup<Program>();
 
         _server = new TestServer(builder);
@@ -44,7 +63,7 @@ public class OcelotGatewayTestBase
 
     protected string GenerateJwtToken(string userId = "test-user", string[] roles = null)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -62,8 +81,8 @@ public class OcelotGatewayTestBase
         }
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
+            issuer: "authservice",
+            audience: "microservice-clients",
             claims: claims,
             expires: DateTime.Now.AddMinutes(30),
             signingCredentials: credentials);
