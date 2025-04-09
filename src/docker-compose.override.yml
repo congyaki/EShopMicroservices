@@ -52,6 +52,18 @@ services:
       - "5672:5672"
       - "15672:15672"
 
+  authdb:
+    container_name: authdb
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=AuthDb
+    restart: always
+    ports:
+        - "5433:5432"
+    volumes:
+      - postgres_auth:/var/lib/postgresql/data/
+
   catalog.api:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -119,11 +131,24 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
+  auth.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=authdb;Port=5432;Database=AuthDb;User Id=postgres;Password=postgres;Include Error Detail=true
+    depends_on:
+      - authdb
+    ports:
+      - "6005:80"
+      - "6065:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
   yarpapigateway:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_URLS=https://+:443;http://+:80
     ports:
       - "6004:80"
       - "6064:443"
@@ -131,6 +156,7 @@ services:
       - catalog.api
       - basket.api
       - ordering.api
+      - auth.api
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro

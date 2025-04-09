@@ -13,6 +13,9 @@ services:
   orderdb:
     image: mcr.microsoft.com/mssql/server
 
+  authdb:
+    image: postgres
+
   messagebroker:
     image: rabbitmq:management
 
@@ -21,7 +24,12 @@ services:
     build:
       context: .
       dockerfile: Services/Catalog/Catalog.API/Dockerfile
-
+  
+  auth.api:
+    image: ${DOCKER_REGISTRY-}authapi
+    build:
+      context: .
+      dockerfile: Services/Auth/Auth.API/Dockerfile
 
   basket.api:
     image: ${DOCKER_REGISTRY-}basketapi
@@ -50,3 +58,4 @@ services:
 volumes:
   postgres_catalog:
   postgres_basket:
+  postgres_auth:
