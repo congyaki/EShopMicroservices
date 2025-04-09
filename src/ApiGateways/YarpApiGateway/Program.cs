@@ -20,7 +20,7 @@ var app = builder.Build();
 
 // Sử dụng Middleware IP Rate Limiting
 //app.UseIpRateLimiting();
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 // Thêm Reverse Proxy
 app.MapReverseProxy();
 

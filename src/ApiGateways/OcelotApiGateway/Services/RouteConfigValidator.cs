@@ -11,7 +11,7 @@
 
         public void ValidateRoutes(IConfiguration configuration)
         {
-            var routes = configuration.GetSection("Routes").Get<List<dynamic>>();
+            var routes = configuration.GetSection("Routes").Get<List<Dictionary<string, object>>>();
 
             if (routes == null || !routes.Any())
             {
@@ -23,13 +23,23 @@
 
             foreach (var route in routes)
             {
-                // Ép kiểu UpstreamPathTemplate về string
-                string upstreamPathTemplate = Convert.ToString(route.UpstreamPathTemplate) ?? string.Empty;
+                // Safely extract the UpstreamPathTemplate
+                string upstreamPathTemplate = string.Empty;
+                if (route.TryGetValue("UpstreamPathTemplate", out var upstreamPathObj))
+                {
+                    upstreamPathTemplate = upstreamPathObj?.ToString() ?? string.Empty;
+                }
 
                 // Check if authentication options are properly configured
-                if (route.AuthenticationOptions != null)
+                if (route.TryGetValue("AuthenticationOptions", out var authOptionsObj) && authOptionsObj != null)
                 {
-                    string authProviderKey = Convert.ToString(route.AuthenticationOptions.AuthenticationProviderKey) ?? string.Empty;
+                    var authOptions = authOptionsObj as Dictionary<string, object>;
+                    string authProviderKey = string.Empty;
+
+                    if (authOptions != null && authOptions.TryGetValue("AuthenticationProviderKey", out var authProviderObj))
+                    {
+                        authProviderKey = authProviderObj?.ToString() ?? string.Empty;
+                    }
 
                     if (string.IsNullOrEmpty(authProviderKey) &&
                         upstreamPathTemplate != "/api/auth/{everything}")

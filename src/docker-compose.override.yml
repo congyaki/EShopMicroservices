@@ -60,7 +60,7 @@ services:
       - POSTGRES_DB=AuthDb
     restart: always
     ports:
-        - "5433:5432"
+        - "5434:5432"
     volumes:
       - postgres_auth:/var/lib/postgresql/data/
 
@@ -148,10 +148,11 @@ services:
   yarpapigateway:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:443;http://+:80
+      # - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ASPNETCORE_URLS=http://+:80
     ports:
       - "6004:80"
-      - "6064:443"
+      # - "6064:443"
     depends_on:
       - catalog.api
       - basket.api

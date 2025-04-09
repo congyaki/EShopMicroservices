@@ -11,10 +11,10 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["OcelotApiGateway.csproj", "."]
-RUN dotnet restore "./OcelotApiGateway.csproj"
+COPY ["ApiGateways/OcelotApiGateway/OcelotApiGateway.csproj", "ApiGateways/OcelotApiGateway/"]
+RUN dotnet restore "./ApiGateways/OcelotApiGateway/OcelotApiGateway.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/ApiGateways/OcelotApiGateway"
 RUN dotnet build "./OcelotApiGateway.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
