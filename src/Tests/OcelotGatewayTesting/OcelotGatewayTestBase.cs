@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 
 namespace OcelotGatewayTesting;
 
