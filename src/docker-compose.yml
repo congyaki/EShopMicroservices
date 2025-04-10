@@ -128,7 +128,7 @@ services:
       - microservices-network
 
   consul:
-    image: consul:latest
+    image: consul:1.15.4
     container_name: consul
     ports:
       - "8500:8500"
