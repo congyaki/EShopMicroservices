@@ -1,7 +1,6 @@
 version: '3.4'
 
 services:
-
   catalogdb:
     container_name: catalogdb
     environment:
@@ -10,7 +9,7 @@ services:
       - POSTGRES_DB=CatalogDb
     restart: always
     ports:
-        - "5432:5432"
+      - "5432:5432"
     volumes:
       - postgres_catalog:/var/lib/postgresql/data/
 
@@ -22,9 +21,9 @@ services:
       - POSTGRES_DB=BasketDb
     restart: always
     ports:
-        - "5433:5432"
+      - "5433:5432"
     volumes:
-      - postgres_basket:/var/lib/postgresql/data/ 
+      - postgres_basket:/var/lib/postgresql/data/
   
   distributedcache:
     container_name: distributedcache
@@ -60,17 +59,29 @@ services:
       - POSTGRES_DB=AuthDb
     restart: always
     ports:
-        - "5434:5432"
+      - "5434:5432"
     volumes:
       - postgres_auth:/var/lib/postgresql/data/
 
-  catalog.api:
+  # Catalog API instances
+  catalog-api-1:
+    container_name: catalog-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
       - ConnectionStrings__Database=Server=catalogdb;Port=5432;Database=CatalogDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ServiceConfig__ServiceName=catalog-api
+      - ServiceConfig__ServiceId=catalog-api-1
+      - ServiceConfig__ServiceAddress=catalog-api-1
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
     depends_on:
       - catalogdb
+      - consul
     ports:
       - "6000:80"
       - "6060:443"
@@ -78,7 +89,34 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
-  basket.api:
+  catalog-api-2:
+    container_name: catalog-api-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=catalogdb;Port=5432;Database=CatalogDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ServiceConfig__ServiceName=catalog-api
+      - ServiceConfig__ServiceId=catalog-api-2
+      - ServiceConfig__ServiceAddress=catalog-api-2
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - catalogdb
+      - consul
+    ports:
+      - "6010:80"
+      - "6070:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  # Basket API instances
+  basket-api-1:
+    container_name: basket-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -88,14 +126,57 @@ services:
       - MessageBroker__Host=amqp://ecommerce-mq:5672
       - MessageBroker__UserName=guest
       - MessageBroker__Password=guest
+      - ServiceConfig__ServiceName=basket-api
+      - ServiceConfig__ServiceId=basket-api-1
+      - ServiceConfig__ServiceAddress=basket-api-1
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
     depends_on:
       - basketdb
       - distributedcache
       - discount.grpc
       - messagebroker
+      - consul
     ports:
       - "6001:80"
       - "6061:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  basket-api-2:
+    container_name: basket-api-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=basketdb;Port=5432;Database=BasketDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ConnectionStrings__Redis=distributedcache:6379
+      - gRPCSettings__DiscountUrl=https://discount.grpc:443
+      - MessageBroker__Host=amqp://ecommerce-mq:5672
+      - MessageBroker__UserName=guest
+      - MessageBroker__Password=guest
+      - ServiceConfig__ServiceName=basket-api
+      - ServiceConfig__ServiceId=basket-api-2
+      - ServiceConfig__ServiceAddress=basket-api-2
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - basketdb
+      - distributedcache
+      - discount.grpc
+      - messagebroker
+      - consul
+    ports:
+      - "6011:80"
+      - "6071:443"
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
@@ -105,6 +186,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
       - ConnectionStrings__Database=Data Source=discountdb
+      - ServiceConfig__ServiceName=discount-grpc
+      - ServiceConfig__ServiceId=discount-grpc-1
+      - ServiceConfig__ServiceAddress=discount.grpc
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+    depends_on:
+      - consul
     ports:
       - "6002:80"
       - "6062:443"
@@ -112,7 +201,9 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
-  ordering.api:
+  # Ordering API instances
+  ordering-api-1:
+    container_name: ordering-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -121,9 +212,19 @@ services:
       - MessageBroker__UserName=guest
       - MessageBroker__Password=guest
       - FeatureManagement__OrderFullfilment=false
+      - ServiceConfig__ServiceName=ordering-api
+      - ServiceConfig__ServiceId=ordering-api-1
+      - ServiceConfig__ServiceAddress=ordering-api-1
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
     depends_on:
       - orderdb
       - messagebroker
+      - consul
     ports:
       - "6003:80"
       - "6063:443"
@@ -131,13 +232,54 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
-  auth.api:
+  ordering-api-2:
+    container_name: ordering-api-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=orderdb;Database=OrderDb;User Id=sa;Password=123456@Aa;Encrypt=False;TrustServerCertificate=True
+      - MessageBroker__Host=amqp://ecommerce-mq:5672
+      - MessageBroker__UserName=guest
+      - MessageBroker__Password=guest
+      - FeatureManagement__OrderFullfilment=false
+      - ServiceConfig__ServiceName=ordering-api
+      - ServiceConfig__ServiceId=ordering-api-2
+      - ServiceConfig__ServiceAddress=ordering-api-2
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - orderdb
+      - messagebroker
+      - consul
+    ports:
+      - "6013:80"
+      - "6073:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  auth-api-1:
+    container_name: auth-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
       - ConnectionStrings__Database=Server=authdb;Port=5432;Database=AuthDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ServiceConfig__ServiceName=auth-api
+      - ServiceConfig__ServiceId=auth-api-1
+      - ServiceConfig__ServiceAddress=auth-api-1
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
     depends_on:
       - authdb
+      - consul
     ports:
       - "6005:80"
       - "6065:443"
@@ -145,37 +287,114 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
+  auth-api-2:
+    container_name: auth-api-2
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=authdb;Port=5432;Database=AuthDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ServiceConfig__ServiceName=auth-api-2
+      - ServiceConfig__ServiceId=auth-api-2
+      - ServiceConfig__ServiceAddress=auth-api-2
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - authdb
+      - consul
+    ports:
+      - "6014:80"
+      - "6074:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  auth-api-3:
+    container_name: auth-api-3
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ConnectionStrings__Database=Server=authdb;Port=5432;Database=AuthDb;User Id=postgres;Password=postgres;Include Error Detail=true
+      - ServiceConfig__ServiceName=auth-api-3
+      - ServiceConfig__ServiceId=auth-api-3
+      - ServiceConfig__ServiceAddress=auth-api-3
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - authdb
+      - consul
+    ports:
+      - "6015:80"
+      - "6075:443"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
   yarpapigateway:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # - ASPNETCORE_URLS=https://+:443;http://+:80
       - ASPNETCORE_URLS=http://+:80
+    depends_on:
+      - catalog-api-1
+      - catalog-api-2
+      - basket-api-1
+      - basket-api-2
+      - ordering-api-1
+      - ordering-api-2
+      - auth-api-1
+      - auth-api-2
+      - auth-api-3
+      - consul
     ports:
       - "6004:80"
-      # - "6064:443"
-    depends_on:
-      - catalog.api
-      - basket.api
-      - ordering.api
-      - auth.api
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
   ocelotapigateway:
+    container_name: ocelotapigateway
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
+      - ServiceConfig__ServiceName=ocelot-gateway
+      - ServiceConfig__ServiceId=ocelot-gateway-1
+      - ServiceConfig__ServiceAddress=ocelotapigateway
+      - ServiceConfig__ServicePort=443
+      - ServiceConfig__ConsulHost=consul
+      - ServiceConfig__ConsulPort=8500
+      - Jwt__Key=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+      - Jwt__Issuer=ecommerce-identity
+      - Jwt__Audience=ecommerce-api
+    depends_on:
+      - catalog-api-1
+      - catalog-api-2
+      - basket-api-1
+      - basket-api-2
+      - ordering-api-1
+      - ordering-api-2
+      - auth-api-1
+      - auth-api-2
+      - auth-api-3
+      - consul
     ports:
       - "6006:80"
       - "6066:443"
-    depends_on:
-      - catalog.api
-      - basket.api
-      - ordering.api
-      - auth.api
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  consul:
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"

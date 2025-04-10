@@ -1,7 +1,9 @@
-﻿using Ocelot.DependencyInjection;
+﻿// ApiGateways/OcelotApiGateway/Program.cs
+using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 using Ocelot.Provider.Polly;
 using Ocelot.Cache.CacheManager;
+using Ocelot.Provider.Consul; // Add this for Consul service discovery
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -48,8 +50,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 var jti = context.Principal.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti)?.Value;
 
-                // In a real implementation, check if the token has been revoked
-                // using a TokenRevocationService
                 if (string.IsNullOrEmpty(jti))
                 {
                     context.Fail("JTI claim is missing from token");
@@ -69,10 +69,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Thêm dịch vụ Ocelot vào container DI với Circuit Breaker và Rate Limiting
+// Thêm dịch vụ Ocelot vào container DI với Circuit Breaker, Caching và Service Discovery
 builder.Services.AddOcelot(builder.Configuration)
-    .AddPolly()       // Circuit Breaker
-    .AddCacheManager(x => x.WithDictionaryHandle()); // Optional caching
+    .AddPolly()           // Circuit Breaker
+    .AddCacheManager(x => x.WithDictionaryHandle()) // Optional caching
+    .AddConsul();         // Add Consul for service discovery
+
+// Add Health Checks for Ocelot
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
 var routeValidator = new RouteConfigValidator(builder.Services.BuildServiceProvider().GetRequiredService<ILogger<RouteConfigValidator>>());
 routeValidator.ValidateRoutes(builder.Configuration);
@@ -90,5 +95,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseOcelot().Wait();
+
+// Map health checks endpoint
+app.MapHealthChecks("/health");
 
 app.Run();

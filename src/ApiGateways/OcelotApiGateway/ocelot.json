@@ -8,6 +8,16 @@
       "PeriodTimespan": 1,
       "Limit": 10,
       "HttpStatusCode": 429
+    },
+    "LoadBalancerOptions": {
+      "Type": "RoundRobin",
+      "Key": "",
+      "Expiry": 0
+    },
+    "ServiceDiscoveryProvider": {
+      "Host": "consul",
+      "Port": 8500,
+      "Type": "Consul"
     }
   },
   "Routes": [
@@ -16,7 +26,15 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "auth-api",
+          "Host": "auth-api-1",
+          "Port": 443
+        },
+        {
+          "Host": "auth-api-2",
+          "Port": 443
+        },
+        {
+          "Host": "auth-api-3",
           "Port": 443
         }
       ],
@@ -25,6 +43,9 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "",
         "AllowedScopes": []
+      },
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
       }
     },
     {
@@ -32,7 +53,11 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "catalog-api",
+          "Host": "catalog-api-1",
+          "Port": 443
+        },
+        {
+          "Host": "catalog-api-2",
           "Port": 443
         }
       ],
@@ -41,6 +66,9 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
+      },
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
       }
     },
     {
@@ -48,7 +76,11 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "ordering-api",
+          "Host": "ordering-api-1",
+          "Port": 443
+        },
+        {
+          "Host": "ordering-api-2",
           "Port": 443
         }
       ],
@@ -57,6 +89,9 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
+      },
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
       }
     },
     {
@@ -64,7 +99,11 @@
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
-          "Host": "basket-api",
+          "Host": "basket-api-1",
+          "Port": 443
+        },
+        {
+          "Host": "basket-api-2",
           "Port": 443
         }
       ],
@@ -73,6 +112,9 @@
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
+      },
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
       }
     }
   ]

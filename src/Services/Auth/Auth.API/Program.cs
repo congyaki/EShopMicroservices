@@ -9,6 +9,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
 using AspNetCoreRateLimit;
+using BuildingBlocks.Services;
+using Consul;
+using BuildingBlocks.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +106,16 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
     options.AddPolicy("AdminOrUser", policy => policy.RequireRole("Admin", "User"));
 });
+
+// Add to each microservice's Program.cs
+builder.Services.AddSingleton<IConsulClient>(sp => new ConsulClient(config =>
+{
+    var serviceConfiguration = sp.GetRequiredService<IConfiguration>().GetServiceConfig();
+    config.Address = new Uri($"http://{serviceConfiguration.ConsulHost}:{serviceConfiguration.ConsulPort}");
+}));
+
+builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
+
 
 var app = builder.Build();
 

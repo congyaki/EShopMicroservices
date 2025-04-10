@@ -49,6 +49,40 @@
                             upstreamPathTemplate);
                     }
                 }
+
+                // Validate DownstreamHostAndPorts for load balancing
+                if (route.TryGetValue("DownstreamHostAndPorts", out var hostsObj) && hostsObj != null)
+                {
+                    var hosts = hostsObj as IEnumerable<object>;
+
+                    if (hosts == null || !hosts.Any())
+                    {
+                        _logger.LogWarning("Route {UpstreamPathTemplate} has no DownstreamHostAndPorts defined",
+                            upstreamPathTemplate);
+                    }
+                    else if (hosts.Count() > 1)
+                    {
+                        // Check for load balancer options when multiple hosts are defined
+                        if (route.TryGetValue("LoadBalancerOptions", out var lbOptionsObj))
+                        {
+                            var lbOptions = lbOptionsObj as Dictionary<string, object>;
+
+                            if (lbOptions != null && lbOptions.TryGetValue("Type", out var lbTypeObj))
+                            {
+                                var lbType = lbTypeObj?.ToString();
+                                _logger.LogInformation(
+                                    "Route {UpstreamPathTemplate} has {HostCount} hosts with {LoadBalancerType} load balancing",
+                                    upstreamPathTemplate, hosts.Count(), lbType);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Route {UpstreamPathTemplate} has multiple hosts but no LoadBalancerOptions defined",
+                                upstreamPathTemplate);
+                        }
+                    }
+                }
             }
 
             _logger.LogInformation("Route validation completed");
