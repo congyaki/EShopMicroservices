@@ -1,6 +1,6 @@
 ﻿{
   "GlobalConfiguration": {
-    "BaseUrl": "https://api-gateway",
+    "BaseUrl": "http://api-gateway",
     "RateLimitOptions": {
       "ClientWhitelist": [],
       "EnableRateLimiting": true,
@@ -22,97 +22,109 @@
   },
   "Routes": [
     {
-      "DownstreamPathTemplate": "/api/auth/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "auth-api-1",
-          "Port": 443
+          "Port": 80
         },
         {
           "Host": "auth-api-2",
-          "Port": 443
+          "Port": 80
         },
         {
           "Host": "auth-api-3",
-          "Port": 443
+          "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamPathTemplate": "/auth-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST" ],
+      /* Comment tạm thời phần xác thực
       "AuthenticationOptions": {
-        "AuthenticationProviderKey": "",
+        "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
+      */
+      "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
       }
     },
     {
-      "DownstreamPathTemplate": "/api/v1/catalog/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "catalog-api-1",
-          "Port": 443
+          "Port": 80
         },
         {
           "Host": "catalog-api-2",
-          "Port": 443
+          "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/api/v1/catalog/{everything}",
+      "UpstreamPathTemplate": "/catalog-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      /* Comment tạm thời phần xác thực
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
+      */
+      "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
       }
     },
     {
-      "DownstreamPathTemplate": "/api/v1/ordering/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "ordering-api-1",
-          "Port": 443
+          "Port": 80
         },
         {
           "Host": "ordering-api-2",
-          "Port": 443
+          "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/api/v1/ordering/{everything}",
+      "UpstreamPathTemplate": "/ordering-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      /* Comment tạm thời phần xác thực
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
+      */
+      "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
       }
     },
     {
-      "DownstreamPathTemplate": "/api/v1/basket/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "basket-api-1",
-          "Port": 443
+          "Port": 80
         },
         {
           "Host": "basket-api-2",
-          "Port": 443
+          "Port": 80
         }
       ],
-      "UpstreamPathTemplate": "/api/v1/basket/{everything}",
+      "UpstreamPathTemplate": "/basket-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      /* Comment tạm thời phần xác thực
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer",
         "AllowedScopes": []
       },
+      */
+      "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
       }

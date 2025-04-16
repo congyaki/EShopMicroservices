@@ -129,7 +129,7 @@ if (app.Environment.IsDevelopment())
 // Sử dụng middleware rate limiting (phải được gọi trước các middleware xử lý request khác)
 app.UseIpRateLimiting();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseRouting();
 // Add to Program.cs after app.UseRouting()
 app.Use(async (context, next) =>

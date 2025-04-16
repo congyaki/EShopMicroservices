@@ -20,6 +20,7 @@ builder.Services.AddSwaggerGen();
 // Đọc file ocelot.json
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
+/* Comment tạm thời phần xác thực JWT
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -68,12 +69,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
+*/
+
+if (builder.Environment.IsDevelopment())
+{
+    // Tạo HttpClientHandler bỏ qua lỗi chứng chỉ SSL
+    var httpClientHandler = new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
+
+    // Đăng ký HttpClient với handler tùy chỉnh
+    builder.Services.AddSingleton<HttpClient>(sp => new HttpClient(httpClientHandler));
+}
 
 // Thêm dịch vụ Ocelot vào container DI với Circuit Breaker, Caching và Service Discovery
 builder.Services.AddOcelot(builder.Configuration)
-    .AddPolly()           // Circuit Breaker
-    .AddCacheManager(x => x.WithDictionaryHandle()) // Optional caching
-    .AddConsul();         // Add Consul for service discovery
+    .AddPolly()
+    .AddCacheManager(x => x.WithDictionaryHandle())
+    .AddConsul();
 
 // Add Health Checks for Ocelot
 builder.Services.AddHealthChecks()
@@ -92,8 +106,11 @@ if (app.Environment.IsDevelopment())
 }
 
 // Configure middleware pipeline
-app.UseHttpsRedirection();
-app.UseAuthentication();
+//app.UseHttpsRedirection();
+
+// Comment tạm thời middleware xác thực
+// app.UseAuthentication();
+
 app.UseOcelot().Wait();
 
 // Map health checks endpoint

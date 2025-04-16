@@ -30,6 +30,7 @@
                     upstreamPathTemplate = upstreamPathObj?.ToString() ?? string.Empty;
                 }
 
+                /* Comment tạm thời kiểm tra xác thực
                 // Check if authentication options are properly configured
                 if (route.TryGetValue("AuthenticationOptions", out var authOptionsObj) && authOptionsObj != null)
                 {
@@ -49,6 +50,7 @@
                             upstreamPathTemplate);
                     }
                 }
+                */
 
                 // Validate DownstreamHostAndPorts for load balancing
                 if (route.TryGetValue("DownstreamHostAndPorts", out var hostsObj) && hostsObj != null)
