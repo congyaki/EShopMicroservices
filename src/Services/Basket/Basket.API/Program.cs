@@ -20,11 +20,11 @@ builder.Services.AddMediatR(config =>
 builder.Services.AddValidatorsFromAssembly(assembly);
 
 builder.Services.AddAutoMapper(assembly);
-
+var DatabaseConnection = builder.Configuration.GetConnectionString("Database")!;
 //Data Services
 builder.Services.AddMarten(opts =>
 {
-    opts.Connection(builder.Configuration.GetConnectionString("Database")!);
+    opts.Connection(DatabaseConnection);
     opts.Schema.For<ShoppingCart>().Identity(e => e.UserName);
 }).UseLightweightSessions();
 

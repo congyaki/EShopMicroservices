@@ -1,4 +1,4 @@
-﻿{
+{
   "GlobalConfiguration": {
     "BaseUrl": "http://api-gateway",
     "RateLimitOptions": {
@@ -28,7 +28,7 @@
         {
           "Host": "auth-api-1",
           "Port": 80
-        },
+        }
         //{
         //  "Host": "auth-api-2",
         //  "Port": 80
@@ -59,10 +59,14 @@
           "Host": "catalog-api-1",
           "Port": 80
         },
-        //{
-        //  "Host": "catalog-api-2",
-        //  "Port": 80
-        //}
+        {
+          "Host": "catalog-api-2",
+          "Port": 80
+        },
+        {
+          "Host": "catalog-api-3",
+          "Port": 80
+        }
       ],
       "UpstreamPathTemplate": "/catalog-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
@@ -84,7 +88,7 @@
         {
           "Host": "ordering-api-1",
           "Port": 80
-        },
+        }
         //{
         //  "Host": "ordering-api-2",
         //  "Port": 80
@@ -110,7 +114,7 @@
         {
           "Host": "basket-api-1",
           "Port": 80
-        },
+        }
         //{
         //  "Host": "basket-api-2",
         //  "Port": 80

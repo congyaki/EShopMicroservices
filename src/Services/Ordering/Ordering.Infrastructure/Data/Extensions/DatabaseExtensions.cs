@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Ordering.Infrastructure.Data.Extensions
 {
@@ -10,7 +13,12 @@ namespace Ordering.Infrastructure.Data.Extensions
 
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            context.Database.MigrateAsync().GetAwaiter().GetResult();
+            var databaseCreator = context.Database.GetService<IRelationalDatabaseCreator>();
+
+            if (!databaseCreator.Exists())
+            {
+                context.Database.MigrateAsync().GetAwaiter().GetResult();
+            }
 
             await SeedAsync(context);
         }

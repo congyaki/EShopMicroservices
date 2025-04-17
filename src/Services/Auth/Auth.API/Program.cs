@@ -12,6 +12,7 @@ using AspNetCoreRateLimit;
 using BuildingBlocks.Services;
 using Consul;
 using BuildingBlocks.Extensions;
+using Auth.API.Data.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+var DatabaseConnection = builder.Configuration.GetConnectionString("Database");
+builder.Services.AddDbContext<AuthDbContext>(options =>
+    options.UseNpgsql(DatabaseConnection)
+);
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "AuthService:";
+});
 
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>
@@ -43,14 +55,6 @@ builder.Services.AddAuthentication(options =>
 // Add AuthService dependencies
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("AuthConnection")));
-
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "AuthService:";
-});
 builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
 
 builder.Services.AddSingleton<IKeyManagementService, KeyManagementService>();
@@ -168,4 +172,8 @@ app.MapHealthChecks("/health", new HealthCheckOptions
         await context.Response.WriteAsync(result);
     }
 });
+
+
+app.MigrateAuthDatabase();
+
 app.Run();
