@@ -262,7 +262,9 @@ services:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
   # API GATEWAYS (8080-8099, 9080-9099)
-  yarpapigateway:
+  yarp:
+    restart: on-failure
+    container_name: yarp
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
@@ -280,8 +282,9 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
-  ocelotapigateway:
-    container_name: ocelotapigateway
+  ocelot:
+    restart: on-failure
+    container_name: ocelot
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -369,7 +372,6 @@ services:
 
   # Kong setup service
   kong-setup:
-    restart: on-failure
     depends_on:
       - kong
       - catalog-api-1
@@ -381,6 +383,7 @@ services:
 
   # Traefik API Gateway (8110-8119, 9110-9119)
   traefik:
+    restart: on-failure
     environment:
       - TRAEFIK_API=true
       - TRAEFIK_API_DASHBOARD=true
@@ -403,7 +406,6 @@ services:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     
   traefik-setup:
-    restart: on-failure
     volumes:
       - traefik-config:/config
     depends_on:
@@ -436,7 +438,6 @@ services:
       
   nginx-setup:
     container_name: nginx-setup
-    restart: on-failure
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro

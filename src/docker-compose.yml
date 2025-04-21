@@ -87,8 +87,8 @@ services:
     networks:
       - microservices-network
       
-  yarpapigateway:
-    image: ${DOCKER_REGISTRY-}yarpapigateway
+  yarp:
+    image: ${DOCKER_REGISTRY-}yarp
     build:
       context: .
       dockerfile: ApiGateways/YarpApiGateway/Dockerfile
@@ -97,8 +97,8 @@ services:
     profiles:
       - yarp
 
-  ocelotapigateway:
-    image: ${DOCKER_REGISTRY-}ocelotapigateway
+  ocelot:
+    image: ${DOCKER_REGISTRY-}ocelot
     build:
       context: .
       dockerfile: ApiGateways/OcelotApiGateway/Dockerfile
