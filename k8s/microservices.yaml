@@ -1,0 +1,380 @@
+# microservices.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: catalog-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: catalog-api
+    spec:
+      containers:
+      - name: catalog-api
+        image: ${DOCKER_REGISTRY-}catalogapi
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ConnectionStrings__Database
+          value: "Server=catalogdb;Port=5432;Database=CatalogDb;User Id=postgres;Password=postgres;Include Error Detail=true"
+        - name: ServiceConfig__ServiceName
+          value: "catalog-api"
+        - name: ServiceConfig__ServiceId
+          value: "catalog-api-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "catalog-api"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: JWT_KEY
+        - name: Jwt__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_ISSUER
+        - name: Jwt__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_AUDIENCE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: catalog-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basket-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: basket-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: basket-api
+    spec:
+      containers:
+      - name: basket-api
+        image: ${DOCKER_REGISTRY-}basketapi
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ConnectionStrings__Database
+          value: "Server=basketdb;Port=5432;Database=BasketDb;User Id=postgres;Password=postgres;Include Error Detail=true"
+        - name: ConnectionStrings__Redis
+          value: "distributedcache:6379"
+        - name: gRPCSettings__DiscountUrl
+          value: "https://discount-grpc:443"
+        - name: MessageBroker__Host
+          value: "amqp://messagebroker:5672"
+        - name: MessageBroker__UserName
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: RABBITMQ_DEFAULT_USER
+        - name: MessageBroker__Password
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: RABBITMQ_DEFAULT_PASS
+        - name: ServiceConfig__ServiceName
+          value: "basket-api"
+        - name: ServiceConfig__ServiceId
+          value: "basket-api-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "basket-api"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: JWT_KEY
+        - name: Jwt__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_ISSUER
+        - name: Jwt__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_AUDIENCE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: basket-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: basket-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discount-grpc
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: discount-grpc
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: discount-grpc
+    spec:
+      containers:
+      - name: discount-grpc
+        image: ${DOCKER_REGISTRY-}discountgrpc
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ConnectionStrings__Database
+          value: "Data Source=discountdb"
+        - name: ServiceConfig__ServiceName
+          value: "discount-grpc"
+        - name: ServiceConfig__ServiceId
+          value: "discount-grpc-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "discount-grpc"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discount-grpc
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: discount-grpc
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ordering-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: ordering-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ordering-api
+    spec:
+      containers:
+      - name: ordering-api
+        image: ${DOCKER_REGISTRY-}orderingapi
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ConnectionStrings__Database
+          value: "Server=orderdb;Database=OrderDb;User Id=sa;Password=123456@Aa;Encrypt=False;TrustServerCertificate=True"
+        - name: MessageBroker__Host
+          value: "amqp://messagebroker:5672"
+        - name: MessageBroker__UserName
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: RABBITMQ_DEFAULT_USER
+        - name: MessageBroker__Password
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: RABBITMQ_DEFAULT_PASS
+        - name: FeatureManagement__OrderFullfilment
+          value: "false"
+        - name: ServiceConfig__ServiceName
+          value: "ordering-api"
+        - name: ServiceConfig__ServiceId
+          value: "ordering-api-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "ordering-api"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: JWT_KEY
+        - name: Jwt__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_ISSUER
+        - name: Jwt__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_AUDIENCE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ordering-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: ordering-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: auth-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: auth-api
+    spec:
+      containers:
+      - name: auth-api
+        image: ${DOCKER_REGISTRY-}authapi
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ConnectionStrings__Database
+          value: "Server=authdb;Port=5432;Database=AuthDb;User Id=postgres;Password=postgres;Include Error Detail=true"
+        - name: ServiceConfig__ServiceName
+          value: "auth-api"
+        - name: ServiceConfig__ServiceId
+          value: "auth-api-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "auth-api"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: JWT_KEY
+        - name: Jwt__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_ISSUER
+        - name: Jwt__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_AUDIENCE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-api
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: auth-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443

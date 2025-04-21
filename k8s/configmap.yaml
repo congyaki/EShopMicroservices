@@ -1,0 +1,28 @@
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-config
+  namespace: ecommerce-dev
+data:
+  POSTGRES_DB_CATALOG: "CatalogDb"
+  POSTGRES_DB_BASKET: "BasketDb"
+  POSTGRES_DB_AUTH: "AuthDb"
+  POSTGRES_USER: "postgres"
+  JWT_ISSUER: "ecommerce-identity"
+  JWT_AUDIENCE: "ecommerce-api"
+  CONSUL_HOST: "consul"
+  CONSUL_PORT: "8500"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ecommerce-secrets
+  namespace: ecommerce-dev
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "postgres"
+  SA_PASSWORD: "123456@Aa"
+  RABBITMQ_DEFAULT_USER: "guest"
+  RABBITMQ_DEFAULT_PASS: "guest"
+  JWT_KEY: "727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"

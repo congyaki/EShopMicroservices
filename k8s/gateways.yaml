@@ -1,0 +1,72 @@
+# gateways.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocelot-api-gateway
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: ocelot-api-gateway
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ocelot-api-gateway
+    spec:
+      containers:
+      - name: ocelot-api-gateway
+        image: ${DOCKER_REGISTRY-}ocelotapigateway
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Development"
+        - name: ASPNETCORE_URLS
+          value: "https://+:443;http://+:80"
+        - name: ServiceConfig__ServiceName
+          value: "ocelot-gateway"
+        - name: ServiceConfig__ServiceId
+          value: "ocelot-gateway-1"
+        - name: ServiceConfig__ServiceAddress
+          value: "ocelot-api-gateway"
+        - name: ServiceConfig__ServicePort
+          value: "443"
+        - name: ServiceConfig__ConsulHost
+          value: "consul"
+        - name: ServiceConfig__ConsulPort
+          value: "8500"
+        - name: Jwt__Key
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: JWT_KEY
+        - name: Jwt__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_ISSUER
+        - name: Jwt__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: JWT_AUDIENCE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ocelot-api-gateway
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: ocelot-api-gateway
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  type: LoadBalancer

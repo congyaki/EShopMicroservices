@@ -1,6 +1,11 @@
 {
   "GlobalConfiguration": {
-    "BaseUrl": "http://api-gateway",
+    "BaseUrl": "http://ocelot-api-gateway",
+    "ServiceDiscoveryProvider": {
+      "Host": "consul",
+      "Port": 8500,
+      "Type": "Consul"
+    },
     "RateLimitOptions": {
       "ClientWhitelist": [],
       "EnableRateLimiting": true,
@@ -8,82 +13,65 @@
       "PeriodTimespan": 1,
       "Limit": 10,
       "HttpStatusCode": 429
-    },
-    "LoadBalancerOptions": {
-      "Type": "RoundRobin",
-      "Key": "",
-      "Expiry": 0
-    },
-    "ServiceDiscoveryProvider": {
-      "Host": "consul",
-      "Port": 8500,
-      "Type": "Consul"
     }
   },
   "Routes": [
     {
       "DownstreamPathTemplate": "/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "auth-api",
-          "Port": 80
-        }
-      ],
-      "UpstreamPathTemplate": "/auth-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST" ],
-      "AuthenticationOptions": null,
+      "ServiceName": "auth-api",
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
-      }
+      },
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": null
+    },
+    {
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
+      "ServiceName": "catalog-api",
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "UpstreamPathTemplate": "/api/catalog/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": null
+    },
+    {
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
+      "ServiceName": "ordering-api",
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "UpstreamPathTemplate": "/api/ordering/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": null
+    },
+    {
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
+      "ServiceName": "basket-api",
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "UpstreamPathTemplate": "/api/basket/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": null
     },
     {
       "DownstreamPathTemplate": "/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "catalog-api",
-          "Port": 80
+          "Host": "consul",
+          "Port": 8500
         }
       ],
-      "UpstreamPathTemplate": "/catalog-service/{everything}",
+      "UpstreamPathTemplate": "/consul/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": null,
-      "LoadBalancerOptions": {
-        "Type": "RoundRobin"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "ordering-api",
-          "Port": 80
-        }
-      ],
-      "UpstreamPathTemplate": "/ordering-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": null,
-      "LoadBalancerOptions": {
-        "Type": "RoundRobin"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "basket-api-1",
-          "Port": 80
-        }
-      ],
-      "UpstreamPathTemplate": "/basket-service/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": null,
-      "LoadBalancerOptions": {
-        "Type": "RoundRobin"
-      }
+      "AuthenticationOptions": null
     }
   ]
 }

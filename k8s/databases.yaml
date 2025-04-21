@@ -1,0 +1,211 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalogdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: catalogdb
+  template:
+    metadata:
+      labels:
+        app: catalogdb
+    spec:
+      containers:
+      - name: catalogdb
+        image: postgres:16
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_DB_CATALOG
+        volumeMounts:
+        - name: postgres-catalog-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-catalog-data
+        persistentVolumeClaim:
+          claimName: postgres-catalog-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: catalogdb
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: basketdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: basketdb
+  template:
+    metadata:
+      labels:
+        app: basketdb
+    spec:
+      containers:
+      - name: basketdb
+        image: postgres:16
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_DB_BASKET
+        volumeMounts:
+        - name: postgres-basket-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-basket-data
+        persistentVolumeClaim:
+          claimName: postgres-basket-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: basketdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: basketdb
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: authdb
+  template:
+    metadata:
+      labels:
+        app: authdb
+    spec:
+      containers:
+      - name: authdb
+        image: postgres:16
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: ecommerce-config
+              key: POSTGRES_DB_AUTH
+        volumeMounts:
+        - name: postgres-auth-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-auth-data
+        persistentVolumeClaim:
+          claimName: postgres-auth-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: authdb
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orderdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    matchLabels:
+      app: orderdb
+  template:
+    metadata:
+      labels:
+        app: orderdb
+    spec:
+      containers:
+      - name: orderdb
+        image: mcr.microsoft.com/mssql/server
+        ports:
+        - containerPort: 1433
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ecommerce-secrets
+              key: SA_PASSWORD
+        volumeMounts:
+        - name: mssql-data
+          mountPath: /var/opt/mssql
+      volumes:
+      - name: mssql-data
+        persistentVolumeClaim:
+          claimName: mssql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orderdb
+  namespace: ecommerce-dev
+spec:
+  selector:
+    app: orderdb
+  ports:
+  - port: 1433
+    targetPort: 1433
