@@ -94,6 +94,8 @@ services:
       dockerfile: ApiGateways/YarpApiGateway/Dockerfile
     networks:
       - microservices-network
+    profiles:
+      - yarp
 
   ocelotapigateway:
     image: ${DOCKER_REGISTRY-}ocelotapigateway
@@ -102,6 +104,8 @@ services:
       dockerfile: ApiGateways/OcelotApiGateway/Dockerfile
     networks:
       - microservices-network
+    profiles:
+      - ocelot
 
   consul:
     image: consul:1.15.4
@@ -119,6 +123,8 @@ services:
     container_name: kong-database
     networks:
       - microservices-network
+    profiles:
+      - kong
       
   kong-migration:
     image: kong:3.4.2
@@ -128,6 +134,8 @@ services:
     depends_on:
       - kong-database
     restart: on-failure
+    profiles:
+      - kong
       
   kong:
     image: kong:3.4.2
@@ -137,6 +145,8 @@ services:
     depends_on:
       - kong-database
       - kong-migration
+    profiles:
+      - kong
       
   kong-setup:
     image: ${DOCKER_REGISTRY-}kong-setup
@@ -146,6 +156,8 @@ services:
     networks:
       - microservices-network
     depends_on:
+      - kong
+    profiles:
       - kong
 
   # Traefik API Gateway
@@ -161,6 +173,8 @@ services:
       - basket-api-1
       - ordering-api-1
       - auth-api-1
+    profiles:
+      - traefik
       
   # Traefik setup container
   traefik-setup:
@@ -171,6 +185,8 @@ services:
     networks:
       - microservices-network
     depends_on:
+      - traefik
+    profiles:
       - traefik
 
 volumes:

@@ -318,7 +318,7 @@ services:
       - POSTGRES_USER=kong
       - POSTGRES_PASSWORD=kong
       - POSTGRES_DB=kong
-    restart: always
+    restart: on-failure
     ports:
       - "5005:5432"
     volumes:
@@ -357,7 +357,7 @@ services:
       - basket-api-1
       - ordering-api-1
       - auth-api-1
-    restart: always
+    restart: on-failure
     ports:
       - "8100:8000"
       - "8101:8001"
@@ -369,7 +369,7 @@ services:
 
   # Kong setup service
   kong-setup:
-    restart: always
+    restart: on-failure
     depends_on:
       - kong
       - catalog-api-1
@@ -403,7 +403,7 @@ services:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
     
   traefik-setup:
-    restart: always
+    restart: on-failure
     volumes:
       - traefik-config:/config
     depends_on:
