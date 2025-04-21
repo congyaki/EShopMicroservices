@@ -39,13 +39,21 @@ services:
     networks:
       - microservices-network
 
-  # catalog-api-2:
-  #   image: ${DOCKER_REGISTRY-}catalogapi
-  #   build:
-  #     context: .
-  #     dockerfile: Services/Catalog/Catalog.API/Dockerfile
-  #   networks:
-  #     - microservices-network
+  catalog-api-2:
+    image: ${DOCKER_REGISTRY-}catalogapi
+    build:
+      context: .
+      dockerfile: Services/Catalog/Catalog.API/Dockerfile
+    networks:
+      - microservices-network
+
+  catalog-api-3:
+    image: ${DOCKER_REGISTRY-}catalogapi
+    build:
+      context: .
+      dockerfile: Services/Catalog/Catalog.API/Dockerfile
+    networks:
+      - microservices-network
 
   auth-api-1:
     image: ${DOCKER_REGISTRY-}authapi
@@ -55,22 +63,6 @@ services:
     networks:
       - microservices-network
 
-  # auth-api-2:
-  #   image: ${DOCKER_REGISTRY-}authapi
-  #   build:
-  #     context: .
-  #     dockerfile: Services/Auth/Auth.API/Dockerfile
-  #   networks:
-  #     - microservices-network
-
-  # auth-api-3:
-  #   image: ${DOCKER_REGISTRY-}authapi
-  #   build:
-  #     context: .
-  #     dockerfile: Services/Auth/Auth.API/Dockerfile
-  #   networks:
-  #     - microservices-network
-
   basket-api-1:
     image: ${DOCKER_REGISTRY-}basketapi
     build:
@@ -78,14 +70,6 @@ services:
       dockerfile: Services/Basket/Basket.API/Dockerfile
     networks:
       - microservices-network
-
-  # basket-api-2:
-  #   image: ${DOCKER_REGISTRY-}basketapi
-  #   build:
-  #     context: .
-  #     dockerfile: Services/Basket/Basket.API/Dockerfile
-  #   networks:
-  #     - microservices-network
 
   discount.grpc:
     image: ${DOCKER_REGISTRY-}discountgrpc
@@ -102,15 +86,7 @@ services:
       dockerfile: Services/Ordering/Ordering.API/Dockerfile
     networks:
       - microservices-network
-
-  # ordering-api-2:
-  #   image: ${DOCKER_REGISTRY-}orderingapi
-  #   build:
-  #     context: .
-  #     dockerfile: Services/Ordering/Ordering.API/Dockerfile
-  #   networks:
-  #     - microservices-network
-
+      
   yarpapigateway:
     image: ${DOCKER_REGISTRY-}yarpapigateway
     build:

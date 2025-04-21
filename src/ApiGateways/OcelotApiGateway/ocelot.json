@@ -1,6 +1,6 @@
 ﻿{
   "GlobalConfiguration": {
-    "BaseUrl": "http://api-gateway",
+    "BaseUrl": "http://ocelotapigateway",
     "RateLimitOptions": {
       "ClientWhitelist": [],
       "EnableRateLimiting": true,
@@ -28,24 +28,10 @@
         {
           "Host": "auth-api-1",
           "Port": 80
-        },
-        //{
-        //  "Host": "auth-api-2",
-        //  "Port": 80
-        //},
-        //{
-        //  "Host": "auth-api-3",
-        //  "Port": 80
-        //}
+        }
       ],
       "UpstreamPathTemplate": "/auth-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST" ],
-      /* Comment tạm thời phần xác thực
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      },
-      */
       "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
@@ -59,19 +45,17 @@
           "Host": "catalog-api-1",
           "Port": 80
         },
-        //{
-        //  "Host": "catalog-api-2",
-        //  "Port": 80
-        //}
+        {
+          "Host": "catalog-api-2",
+          "Port": 80
+        },
+        {
+          "Host": "catalog-api-3",
+          "Port": 80
+        }
       ],
       "UpstreamPathTemplate": "/catalog-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      /* Comment tạm thời phần xác thực
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      },
-      */
       "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
@@ -84,20 +68,10 @@
         {
           "Host": "ordering-api-1",
           "Port": 80
-        },
-        //{
-        //  "Host": "ordering-api-2",
-        //  "Port": 80
-        //}
+        }
       ],
       "UpstreamPathTemplate": "/ordering-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      /* Comment tạm thời phần xác thực
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      },
-      */
       "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
@@ -110,20 +84,10 @@
         {
           "Host": "basket-api-1",
           "Port": 80
-        },
-        //{
-        //  "Host": "basket-api-2",
-        //  "Port": 80
-        //}
+        }
       ],
       "UpstreamPathTemplate": "/basket-service/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      /* Comment tạm thời phần xác thực
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      },
-      */
       "AuthenticationOptions": null,
       "LoadBalancerOptions": {
         "Type": "RoundRobin"

@@ -1,4 +1,6 @@
-﻿using Marten.Schema;
+﻿using Marten;
+using Marten.Schema;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Catalog.API.Data
 {
@@ -9,6 +11,21 @@ namespace Catalog.API.Data
             using var session = store.LightweightSession();
 
             if (await session.Query<Product>().AnyAsync(cancellation))
+            {
+                return;
+            }
+
+            session.Store<Product>(GetPreconfiguredProducts());
+            await session.SaveChangesAsync();
+        }
+
+        // Method to initialize data from service provider, will be called after migration
+        public async Task InitializeAsync(IServiceProvider serviceProvider)
+        {
+            var store = serviceProvider.GetRequiredService<IDocumentStore>();
+            using var session = store.LightweightSession();
+
+            if (await session.Query<Product>().AnyAsync())
             {
                 return;
             }
@@ -111,5 +128,4 @@ namespace Catalog.API.Data
             }
         };
     }
-
 }
