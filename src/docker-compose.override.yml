@@ -414,3 +414,37 @@ services:
       - basket-api-1
       - ordering-api-1
       - auth-api-1
+
+  # NGINX API Gateway (8120-8129, 9120-9129)
+  nginx:
+    container_name: nginx
+    restart: on-failure
+    depends_on:
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
+      - consul
+    ports:
+      - "8120:80"   # HTTP port
+      - "9120:443"  # HTTPS port (if configured)
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+      
+  nginx-setup:
+    container_name: nginx-setup
+    restart: on-failure
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    depends_on:
+      - nginx
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1

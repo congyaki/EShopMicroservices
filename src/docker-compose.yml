@@ -188,6 +188,39 @@ services:
       - traefik
     profiles:
       - traefik
+      
+  # NGINX API Gateway
+  nginx:
+    image: ${DOCKER_REGISTRY-}nginx-gateway
+    build:
+      context: .
+      dockerfile: ApiGateways/NginxApiGateway/Dockerfile
+    container_name: nginx
+    networks:
+      - microservices-network
+    depends_on:
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
+    profiles:
+      - nginx
+      
+  # NGINX setup container
+  nginx-setup:
+    image: ${DOCKER_REGISTRY-}nginx-setup
+    build:
+      context: .
+      dockerfile: ApiGateways/NginxApiGateway/Dockerfile
+    command: sh /setup.sh
+    networks:
+      - microservices-network
+    depends_on:
+      - nginx
+    profiles:
+      - nginx
 
 volumes:
   postgres_catalog:
