@@ -1,0 +1,75 @@
+http:
+  routers:
+    auth-router:
+      rule: "PathPrefix(`/auth-service`)"
+      service: auth-service
+      middlewares:
+        - strip-auth-prefix
+        
+    catalog-router:
+      rule: "PathPrefix(`/catalog-service`)"
+      service: catalog-service
+      middlewares:
+        - strip-catalog-prefix
+        
+    basket-router:
+      rule: "PathPrefix(`/basket-service`)"
+      service: basket-service
+      middlewares:
+        - strip-basket-prefix
+        
+    ordering-router:
+      rule: "PathPrefix(`/ordering-service`)"
+      service: ordering-service
+      middlewares:
+        - strip-ordering-prefix
+        
+  middlewares:
+    strip-auth-prefix:
+      stripPrefix:
+        prefixes:
+          - "/auth-service"
+          
+    strip-catalog-prefix:
+      stripPrefix:
+        prefixes:
+          - "/catalog-service"
+          
+    strip-basket-prefix:
+      stripPrefix:
+        prefixes:
+          - "/basket-service"
+          
+    strip-ordering-prefix:
+      stripPrefix:
+        prefixes:
+          - "/ordering-service"
+          
+    rate-limit:
+      rateLimit:
+        average: 10
+        burst: 15
+        period: 1s
+        
+  services:
+    auth-service:
+      loadBalancer:
+        servers:
+          - url: "http://auth-api-1:80"
+        
+    catalog-service:
+      loadBalancer:
+        servers:
+          - url: "http://catalog-api-1:80"
+          - url: "http://catalog-api-2:80"
+          - url: "http://catalog-api-3:80"
+        
+    basket-service:
+      loadBalancer:
+        servers:
+          - url: "http://basket-api-1:80"
+        
+    ordering-service:
+      loadBalancer:
+        servers:
+          - url: "http://ordering-api-1:80"

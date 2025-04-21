@@ -112,11 +112,73 @@ services:
     command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
     networks:
       - microservices-network
+      
+  # Kong API Gateway and database
+  kong-database:
+    image: postgres:16
+    container_name: kong-database
+    networks:
+      - microservices-network
+      
+  kong-migration:
+    image: kong:3.4.2
+    command: kong migrations bootstrap
+    networks:
+      - microservices-network
+    depends_on:
+      - kong-database
+    restart: on-failure
+      
+  kong:
+    image: kong:3.4.2
+    container_name: kong
+    networks:
+      - microservices-network
+    depends_on:
+      - kong-database
+      - kong-migration
+      
+  kong-setup:
+    image: ${DOCKER_REGISTRY-}kong-setup
+    build:
+      context: .
+      dockerfile: ApiGateways/KongApiGateway/Dockerfile
+    networks:
+      - microservices-network
+    depends_on:
+      - kong
+
+  # Traefik API Gateway
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    networks:
+      - microservices-network
+    depends_on:
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
+      
+  # Traefik setup container
+  traefik-setup:
+    image: ${DOCKER_REGISTRY-}traefik-setup
+    build:
+      context: .
+      dockerfile: /ApiGateways/TraefikApiGateway/Dockerfile
+    networks:
+      - microservices-network
+    depends_on:
+      - traefik
 
 volumes:
   postgres_catalog:
   postgres_basket:
   postgres_auth:
+  postgres_kong:
+  traefik-config:
 
 networks:
   microservices-network:

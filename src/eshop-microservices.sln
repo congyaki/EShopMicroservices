@@ -36,6 +36,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BuildingBlocks.Messaging", "BuildingBlocks\BuildingBlocks.Messaging\BuildingBlocks.Messaging.csproj", "{377C0D8E-FBE5-47D0-8689-465059A74D20}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ApiGateways", "ApiGateways", "{14F7B281-3BD4-41D0-8E85-CD501A9782A8}"
+	ProjectSection(SolutionItems) = preProject
+		ApiGateways\KongApiGateway\Dockerfile = ApiGateways\KongApiGateway\Dockerfile
+		ApiGateways\KongApiGateway\kong-setup.sh = ApiGateways\KongApiGateway\kong-setup.sh
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YarpApiGateway", "ApiGateways\YarpApiGateway\YarpApiGateway.csproj", "{260EF5CA-D0B4-4E07-B038-863A5FE6C848}"
 EndProject

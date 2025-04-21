@@ -310,3 +310,107 @@ services:
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  # Kong API Gateway (8100-8109, 9100-9109)
+  kong-database:
+    container_name: kong-database
+    environment:
+      - POSTGRES_USER=kong
+      - POSTGRES_PASSWORD=kong
+      - POSTGRES_DB=kong
+    restart: always
+    ports:
+      - "5005:5432"
+    volumes:
+      - postgres_kong:/var/lib/postgresql/data/
+    
+  kong-migration:
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-database
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+      - KONG_PG_DATABASE=kong
+    depends_on:
+      - kong-database
+    
+  kong:
+    environment:
+      - KONG_DATABASE=postgres
+      - KONG_PG_HOST=kong-database
+      - KONG_PG_USER=kong
+      - KONG_PG_PASSWORD=kong
+      - KONG_PG_DATABASE=kong
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+      - KONG_PROXY_LISTEN=0.0.0.0:8000, 0.0.0.0:8443 ssl
+    depends_on:
+      - kong-database
+      - kong-migration
+      - consul
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
+    restart: always
+    ports:
+      - "8100:8000"
+      - "8101:8001"
+      - "9100:8443"
+      - "9101:8444"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+
+  # Kong setup service
+  kong-setup:
+    restart: always
+    depends_on:
+      - kong
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
+
+  # Traefik API Gateway (8110-8119, 9110-9119)
+  traefik:
+    environment:
+      - TRAEFIK_API=true
+      - TRAEFIK_API_DASHBOARD=true
+      - TRAEFIK_API_INSECURE=true
+      - TRAEFIK_PROVIDERS_DOCKER=true
+      - TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT=false
+      - TRAEFIK_PROVIDERS_FILE_DIRECTORY=/etc/traefik/config
+      - TRAEFIK_PROVIDERS_FILE_WATCH=true
+      - TRAEFIK_ENTRYPOINTS_WEB_ADDRESS=:80
+      - TRAEFIK_ENTRYPOINTS_WEBSECURE_ADDRESS=:443
+      - TRAEFIK_LOG_LEVEL=INFO
+    ports:
+      - "8110:80"   # Web entrypoint (HTTP)
+      - "9110:443"  # WebSecure entrypoint (HTTPS)
+      - "8111:8080" # Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-config:/etc/traefik/config
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
+    
+  traefik-setup:
+    restart: always
+    volumes:
+      - traefik-config:/config
+    depends_on:
+      - traefik
+      - catalog-api-1
+      - catalog-api-2
+      - catalog-api-3
+      - basket-api-1
+      - ordering-api-1
+      - auth-api-1
