@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: catalog-postgres-pvc
+  namespace: eshop-microservices
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-postgres
+  namespace: eshop-microservices
+spec:
+  selector:
+    matchLabels:
+      app: catalog-postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: catalog-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16
+        env:
+        - name: POSTGRES_DB
+          value: CatalogDb
+        - name: POSTGRES_USER
+          value: catalog_user
+        - name: POSTGRES_PASSWORD
+          value: Catalog_P@ssw0rd
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: catalog-postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: "0.5"
+          requests:
+            memory: 256Mi
+            cpu: "0.2"
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "catalog_user", "-d", "CatalogDb"]
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "catalog_user", "-d", "CatalogDb"]
+          initialDelaySeconds: 30
+          periodSeconds: 20
+      volumes:
+      - name: catalog-postgres-data
+        persistentVolumeClaim:
+          claimName: catalog-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-postgres
+  namespace: eshop-microservices
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: catalog-postgres

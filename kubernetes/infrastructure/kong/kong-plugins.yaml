@@ -1,0 +1,36 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: rate-limiting
+  namespace: eshop-microservices
+plugin: rate-limiting
+config:
+  second: 50
+  policy: local
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: jwt-auth
+  namespace: eshop-microservices
+plugin: jwt
+config:
+  claims_to_verify:
+  - exp
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongConsumer
+metadata:
+  name: microservice-clients
+  namespace: eshop-microservices
+username: microservice-clients
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongConsumerJWTAuth
+metadata:
+  name: microservice-clients-jwt
+  namespace: eshop-microservices
+consumerRef: microservice-clients
+algorithm: HS256
+key: authservice
+secret: 727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a

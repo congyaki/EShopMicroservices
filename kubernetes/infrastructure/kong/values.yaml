@@ -1,0 +1,36 @@
+env:
+  database: postgres
+  pg_host: kong-postgres
+  pg_user: kong
+  pg_password: kong
+  pg_database: kong
+admin:
+  enabled: true
+  http:
+    enabled: true
+    servicePort: 8001
+    containerPort: 8001
+  tls:
+    enabled: true
+    servicePort: 8444
+    containerPort: 8444
+proxy:
+  enabled: true
+  type: LoadBalancer
+  http:
+    enabled: true
+    servicePort: 80
+    containerPort: 8000
+  tls:
+    enabled: true
+    servicePort: 443
+    containerPort: 8443
+postgresql:
+  enabled: true
+  auth:
+    username: kong
+    password: kong
+    database: kong
+ingressController:
+  enabled: true
+  installCRDs: true
