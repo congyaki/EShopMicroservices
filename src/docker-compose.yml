@@ -107,16 +107,18 @@ services:
     profiles:
       - ocelot
 
+  # Consul service for development
   consul:
     image: consul:1.15.4
     container_name: consul
     ports:
       - "8500:8500"
       - "8600:8600/udp"
-    command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+    command: "agent -dev -client=0.0.0.0"
     networks:
       - microservices-network
-      
+    # Không đặt consul trong profile nào để nó luôn chạy trong môi trường development
+    
   # Kong API Gateway and database
   kong-database:
     image: postgres:16

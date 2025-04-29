@@ -35,17 +35,8 @@ namespace Ordering.API
                 consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
             }));
 
-            // Đăng ký Leader Election Service
-            services.AddSingleton<ILeaderElectionService>(sp => 
-            {
-                var consulClient = sp.GetRequiredService<IConsulClient>();
-                var logger = sp.GetRequiredService<ILogger<ConsulLeaderElectionService>>();
-                return new ConsulLeaderElectionService(
-                    consulClient, 
-                    "ordering-service", 
-                    serviceId, 
-                    logger);
-            });
+            // Đăng ký Leader Election Service sử dụng Factory pattern
+            services.AddLeaderElection(configuration);
 
             // Đăng ký Background Service để seed data
             services.AddHostedService<OrderingDataSeedingService>();

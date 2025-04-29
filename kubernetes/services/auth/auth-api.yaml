@@ -26,8 +26,6 @@ spec:
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
           value: "Host=auth-postgres;Database=AuthDb;Username=auth_user;Password=Auth_P@ssw0rd"
-        - name: ConnectionStrings__Redis
-          value: "basket-redis:6379"
         - name: EventBusSettings__HostAddress
           valueFrom:
             configMapKeyRef:
@@ -48,6 +46,13 @@ spec:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Audience
+        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
+        - name: LeaderElection__Provider
+          value: "Kubernetes"
+        - name: LeaderElection__ServiceName
+          value: "auth-api"
+        - name: LeaderElection__Namespace
+          value: "eshop-microservices"
         resources:
           requests:
             memory: "128Mi"
@@ -67,6 +72,20 @@ spec:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
+        # Mount ConfigMap vào container
+        volumeMounts:
+        - name: leader-election-config
+          mountPath: /app/leader-election-config
+      # Định nghĩa volumes  
+      volumes:
+      - name: leader-election-config
+        configMap:
+          name: leader-election-config
+          items:
+          - key: leader-election.json
+            path: leader-election.json
+          - key: auth-service.json
+            path: auth-service.json
 ---
 apiVersion: v1
 kind: Service

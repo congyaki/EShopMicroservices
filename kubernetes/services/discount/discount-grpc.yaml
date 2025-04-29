@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: basket-api
+  name: discount-grpc
   namespace: eshop-microservices
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: basket-api
+      app: discount-grpc
   template:
     metadata:
       labels:
-        app: basket-api
+        app: discount-grpc
     spec:
       containers:
-      - name: basket-api
-        image: ${REGISTRY:-}basketapi:${TAG:-latest}
+      - name: discount-grpc
+        image: ${REGISTRY:-}discountgrpc:${TAG:-latest}
         ports:
         - containerPort: 80
         env:
@@ -25,54 +25,36 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Host=basket-postgres;Database=BasketDb;Username=basket_user;Password=Basket_P@ssw0rd"
-        - name: ConnectionStrings__Redis
-          value: "basket-redis:6379"
-        - name: EventBusSettings__HostAddress
-          valueFrom:
-            configMapKeyRef:
-              name: eshop-config
-              key: EventBusSettings__HostAddress
-        - name: gRPCSettings__DiscountUrl
+          value: "Data Source=discount-sqlite"
+        - name: ServiceConfig__ServiceName
+          value: "discount-service"
+        - name: ServiceConfig__ServiceAddress
           value: "http://discount-grpc"
-        - name: JwtSettings__Key
-          valueFrom:
-            secretKeyRef:
-              name: eshop-secrets
-              key: JwtSettings__Key
-        - name: JwtSettings__Issuer
-          valueFrom:
-            secretKeyRef:
-              name: eshop-secrets
-              key: JwtSettings__Issuer
-        - name: JwtSettings__Audience
-          valueFrom:
-            secretKeyRef:
-              name: eshop-secrets
-              key: JwtSettings__Audience
+        - name: ServiceConfig__ServicePort
+          value: "80"
         # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
         - name: LeaderElection__Provider
           value: "Kubernetes"
         - name: LeaderElection__ServiceName
-          value: "basket-api"
+          value: "discount-grpc"
         - name: LeaderElection__Namespace
           value: "eshop-microservices"
         resources:
           requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
             memory: "128Mi"
             cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
         readinessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -80,6 +62,8 @@ spec:
         volumeMounts:
         - name: leader-election-config
           mountPath: /app/leader-election-config
+        - name: sqlite-data
+          mountPath: /app/data
       # Định nghĩa volumes  
       volumes:
       - name: leader-election-config
@@ -88,17 +72,33 @@ spec:
           items:
           - key: leader-election.json
             path: leader-election.json
-          - key: basket-service.json
-            path: basket-service.json
+          - key: discount-service.json
+            path: discount-service.json
+      - name: sqlite-data
+        persistentVolumeClaim:
+          claimName: discount-sqlite-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: basket-api
+  name: discount-grpc
   namespace: eshop-microservices
 spec:
   selector:
-    app: basket-api
+    app: discount-grpc
   ports:
   - port: 80
     targetPort: 80
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: discount-sqlite-data
+  namespace: eshop-microservices
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard

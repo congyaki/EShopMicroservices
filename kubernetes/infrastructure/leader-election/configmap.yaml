@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: leader-election-config
+  namespace: eshop-microservices
+data:
+  # Cấu hình chung cho các service
+  leader-election.json: |
+    {
+      "LeaderElection": {
+        "Provider": "Kubernetes",
+        "Namespace": "eshop-microservices"
+      }
+    }
+  
+  # Cấu hình riêng cho từng service
+  catalog-service.json: |
+    {
+      "LeaderElection": {
+        "ServiceName": "catalog-api"
+      }
+    }
+  
+  basket-service.json: |
+    {
+      "LeaderElection": {
+        "ServiceName": "basket-api"
+      }
+    }
+  
+  ordering-service.json: |
+    {
+      "LeaderElection": {
+        "ServiceName": "ordering-api"
+      }
+    }
+  
+  auth-service.json: |
+    {
+      "LeaderElection": {
+        "ServiceName": "auth-api"
+      }
+    }
+  
+  discount-service.json: |
+    {
+      "LeaderElection": {
+        "ServiceName": "discount-grpc"
+      }
+    }

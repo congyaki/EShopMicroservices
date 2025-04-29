@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using BuildingBlocks.Services;
-using Consul;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,27 +40,9 @@ builder.Services.Configure<CatalogSeedingOptions>(options =>
     if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
 });
 
-// Lấy service ID duy nhất cho instance này - sử dụng trong Leader Election
-var serviceConfig = builder.Configuration.GetServiceConfig();
-var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
-
-// Register Consul client
-builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
-{
-    consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
-}));
-
-// Đăng ký Leader Election Service
-builder.Services.AddSingleton<ILeaderElectionService>(sp => 
-{
-    var consulClient = sp.GetRequiredService<IConsulClient>();
-    var logger = sp.GetRequiredService<ILogger<ConsulLeaderElectionService>>();
-    return new ConsulLeaderElectionService(
-        consulClient, 
-        "catalog-service", 
-        serviceId, 
-        logger);
-});
+// Sử dụng Leader Election Factory để tự động chọn provider phù hợp
+// dựa trên cấu hình (Consul cho Development, Kubernetes cho Production)
+builder.Services.AddLeaderElection(builder.Configuration);
 
 // Đăng ký Background Service để seed data
 builder.Services.AddHostedService<CatalogDataSeedingService>();

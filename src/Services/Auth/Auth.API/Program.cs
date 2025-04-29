@@ -84,18 +84,8 @@ builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig 
     consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
 }));
 
-// Đăng ký Leader Election Service
-builder.Services.AddSingleton<ILeaderElectionService>(sp => 
-{
-    var consulClient = sp.GetRequiredService<IConsulClient>();
-    var logger = sp.GetRequiredService<ILogger<ConsulLeaderElectionService>>();
-    return new ConsulLeaderElectionService(
-        consulClient,
-        serviceConfig.ServiceName,
-        serviceId,
-        logger
-    );
-});
+// Đăng ký Leader Election Service sử dụng Factory để tự động chọn provider phù hợp
+builder.Services.AddLeaderElection(builder.Configuration);
 
 // Đăng ký AuthDataSeedingService làm background service
 builder.Services.AddHostedService<AuthDataSeedingService>();
