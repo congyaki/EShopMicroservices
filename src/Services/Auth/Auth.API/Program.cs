@@ -13,6 +13,8 @@ using BuildingBlocks.Services;
 using Consul;
 using BuildingBlocks.Extensions;
 using Auth.API.Data.Extensions;
+using Auth.API.Entities;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +60,45 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ITokenRevocationService, TokenRevocationService>();
 
 builder.Services.AddSingleton<IKeyManagementService, KeyManagementService>();
+
+// Thêm PasswordHasher service
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+
+// Đăng ký AuthSeedData
+builder.Services.AddScoped<AuthSeedData>();
+
+// Đăng ký AuthSeedingOptions từ cấu hình
+builder.Services.Configure<AuthSeedingOptions>(options => {
+    if (options.BatchSize <= 0) options.BatchSize = 200;
+    if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
+    if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
+});
+
+// Lấy service ID duy nhất cho instance này - sử dụng trong Leader Election
+var serviceConfig = builder.Configuration.GetServiceConfig();
+var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+
+// Register Consul client
+builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
+{
+    consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
+}));
+
+// Đăng ký Leader Election Service
+builder.Services.AddSingleton<ILeaderElectionService>(sp => 
+{
+    var consulClient = sp.GetRequiredService<IConsulClient>();
+    var logger = sp.GetRequiredService<ILogger<ConsulLeaderElectionService>>();
+    return new ConsulLeaderElectionService(
+        consulClient,
+        serviceConfig.ServiceName,
+        serviceId,
+        logger
+    );
+});
+
+// Đăng ký AuthDataSeedingService làm background service
+builder.Services.AddHostedService<AuthDataSeedingService>();
 
 builder.Services.AddHealthChecks()
     .AddCheck("database", () =>
