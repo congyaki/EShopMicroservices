@@ -31,12 +31,43 @@ builder.Services.AddMarten(opts =>
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
 }).UseLightweightSessions();
 
+// Đăng ký và cấu hình CatalogSeeding options
+builder.Services.Configure<CatalogSeedingOptions>(options =>
+{
+    builder.Configuration.GetSection("CatalogSeedingOptions").Bind(options);
+    // Cấu hình mặc định nếu không có trong appsettings
+    if (options.BatchSize <= 0) options.BatchSize = 200;
+    if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
+    if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
+});
+
+// Lấy service ID duy nhất cho instance này - sử dụng trong Leader Election
+var serviceConfig = builder.Configuration.GetServiceConfig();
+var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+
 // Register Consul client
 builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
 {
-    var serviceConfig = builder.Configuration.GetServiceConfig();
     consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
 }));
+
+// Đăng ký Leader Election Service
+builder.Services.AddSingleton<ILeaderElectionService>(sp => 
+{
+    var consulClient = sp.GetRequiredService<IConsulClient>();
+    var logger = sp.GetRequiredService<ILogger<ConsulLeaderElectionService>>();
+    return new ConsulLeaderElectionService(
+        consulClient, 
+        "catalog-service", 
+        serviceId, 
+        logger);
+});
+
+// Đăng ký Background Service để seed data
+builder.Services.AddHostedService<CatalogDataSeedingService>();
+
+// Đăng ký CatalogInitialData cho seed data ban đầu
+builder.Services.AddScoped<CatalogInitialData>();
 
 // Register ServiceDiscoveryHostedService
 builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
@@ -64,12 +95,12 @@ app.MigrateDatabaseSafely(async serviceProvider =>
     // Apply database schema changes
     await store.Storage.ApplyAllConfiguredChangesToDatabaseAsync();
     
-    // If in development, seed initial data
+    // If in development, seed initial data (chỉ seed một số sản phẩm mẫu ban đầu)
     if (app.Environment.IsDevelopment())
     {
         var initialData = serviceProvider.GetRequiredService<CatalogInitialData>();
         await initialData.InitializeAsync(serviceProvider);
-        logger.LogInformation("Database seeded with initial data");
+        logger.LogInformation("Database seeded with initial sample data");
     }
     
     logger.LogInformation("Database migration completed");
