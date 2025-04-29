@@ -1,3 +1,8 @@
+using BuildingBlocks.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Ordering.Infrastructure.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -21,7 +26,20 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    await app.InitialiseDatabaseAsync();
+    
+    // Safe database migration with leader election
+    app.MigrateDatabaseSafely(async serviceProvider =>
+    {
+        var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+        var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
+        
+        logger.LogInformation("Starting database migration for Ordering Service");
+        
+        // Apply database migrations
+        await context.Database.MigrateAsync();
+        
+        logger.LogInformation("Database migration completed");
+    });
 }
 
 //app.UseHttpsRedirection();

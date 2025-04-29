@@ -1,14 +1,25 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BuildingBlocks.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Discount.gRPC.Data
 {
     public static class Extentions
     {
-        public static IApplicationBuilder UseMigration(this IApplicationBuilder app)
+        public static WebApplication UseMigration(this WebApplication app)
         {
-            using var scope = app.ApplicationServices.CreateScope();
-            using var dbContext = scope.ServiceProvider.GetRequiredService<DiscountContext>();
-            dbContext.Database.MigrateAsync();
+            // Safe database migration with leader election
+            app.MigrateDatabaseSafely(async serviceProvider =>
+            {
+                var logger = serviceProvider.GetRequiredService<ILogger<DiscountContext>>();
+                var dbContext = serviceProvider.GetRequiredService<DiscountContext>();
+                
+                logger.LogInformation("Starting database migration for Discount Service");
+                
+                // Apply database migrations
+                await dbContext.Database.MigrateAsync();
+                
+                logger.LogInformation("Database migration completed");
+            });
 
             return app;
         }
