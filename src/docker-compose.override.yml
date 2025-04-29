@@ -75,6 +75,7 @@ services:
   # API SERVICES
   # Catalog API instances (8000-8009, 9000-9009)
   catalog-api-1:
+    restart: on-failure
     container_name: catalog-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -100,6 +101,7 @@ services:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
 
   catalog-api-2:
+    restart: on-failure
     container_name: catalog-api-2
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -125,6 +127,7 @@ services:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
       
   catalog-api-3:
+    restart: on-failure
     container_name: catalog-api-3
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -151,6 +154,7 @@ services:
 
   # Basket API instances (8010-8019, 9010-9019)
   basket-api-1:
+    restart: on-failure
     container_name: basket-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -185,6 +189,7 @@ services:
 
   # Discount gRPC (8020-8029, 9020-9029)
   discount.grpc:
+    restart: on-failure
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
@@ -206,6 +211,7 @@ services:
 
   # Ordering API instances (8030-8039, 9030-9039)
   ordering-api-1:
+    restart: on-failure
     container_name: ordering-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
@@ -237,6 +243,7 @@ services:
 
   # Auth API instances (8040-8049, 9040-9049)
   auth-api-1:
+    restart: on-failure
     container_name: auth-api-1
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
