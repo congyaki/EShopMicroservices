@@ -5,24 +5,31 @@ http:
       service: auth-service
       middlewares:
         - strip-auth-prefix
+        - rate-limit
         
     catalog-router:
       rule: "PathPrefix(`/catalog-service`)"
       service: catalog-service
       middlewares:
         - strip-catalog-prefix
+        - rate-limit
+        - jwt-auth
         
     basket-router:
       rule: "PathPrefix(`/basket-service`)"
       service: basket-service
       middlewares:
         - strip-basket-prefix
+        - rate-limit
+        - jwt-auth
         
     ordering-router:
       rule: "PathPrefix(`/ordering-service`)"
       service: ordering-service
       middlewares:
         - strip-ordering-prefix
+        - rate-limit
+        - jwt-auth
         
   middlewares:
     strip-auth-prefix:
@@ -44,12 +51,20 @@ http:
       stripPrefix:
         prefixes:
           - "/ordering-service"
-          
+    
     rate-limit:
       rateLimit:
-        average: 10
-        burst: 15
+        average: 50
+        burst: 20
         period: 1s
+    
+    # JWT Auth middleware sử dụng ForwardAuth để xác thực với Auth Service
+    jwt-auth:
+      forwardAuth:
+        address: "http://auth-api-1:80/api/auth/validate-token"
+        authResponseHeaders:
+          - "Authorization"
+        trustForwardHeader: true
         
   services:
     auth-service:

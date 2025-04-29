@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
-using OcelotApiGateway.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +20,6 @@ builder.Services.AddSwaggerGen();
 // Đọc file ocelot.json
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
-/* Comment tạm thời phần xác thực JWT
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -56,11 +55,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Fail("JTI claim is missing from token");
                 }
 
-                // You would check revocation here
-                // if (await tokenRevocationService.IsTokenRevokedAsync(jti))
-                // {
-                //     context.Fail("Token has been revoked");
-                // }
+                // Có thể thêm kiểm tra revocation ở đây nếu cần
             },
             OnMessageReceived = context =>
             {
@@ -69,21 +64,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
-*/
 
-if (builder.Environment.IsDevelopment())
-{
-    // Tạo HttpClientHandler bỏ qua lỗi chứng chỉ SSL
-    var httpClientHandler = new HttpClientHandler
-    {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-    };
-
-    // Đăng ký HttpClient với handler tùy chỉnh
-    builder.Services.AddSingleton<HttpClient>(sp => new HttpClient(httpClientHandler));
-}
-
-// Thêm dịch vụ Ocelot vào container DI với Circuit Breaker, Caching và Service Discovery
+// Thêm dịch vụ Ocelot vào container DI
 builder.Services.AddOcelot(builder.Configuration)
     .AddPolly()
     .AddCacheManager(x => x.WithDictionaryHandle())
@@ -91,10 +73,7 @@ builder.Services.AddOcelot(builder.Configuration)
 
 // Add Health Checks for Ocelot
 builder.Services.AddHealthChecks()
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
-
-var routeValidator = new RouteConfigValidator(builder.Services.BuildServiceProvider().GetRequiredService<ILogger<RouteConfigValidator>>());
-routeValidator.ValidateRoutes(builder.Configuration);
+    .AddCheck("self", () => HealthCheckResult.Healthy());
 
 var app = builder.Build();
 
@@ -108,8 +87,9 @@ if (app.Environment.IsDevelopment())
 // Configure middleware pipeline
 //app.UseHttpsRedirection();
 
-// Comment tạm thời middleware xác thực
-// app.UseAuthentication();
+// Enable authentication
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseOcelot().Wait();
 

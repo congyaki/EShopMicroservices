@@ -80,10 +80,38 @@ curl -s -X POST http://kong:8001/upstreams/catalog-upstream/targets \
 curl -s -X PATCH http://kong:8001/services/catalog-service \
   --data host=catalog-upstream
 
-# Add rate limiting plugin globally (similar to Ocelot's rate limiting)
+# Add rate limiting plugin globally - standardized across all gateways
 curl -s -X POST http://kong:8001/plugins \
   --data name=rate-limiting \
-  --data config.second=10 \
+  --data config.second=50 \
   --data config.policy=local
 
-echo "Kong API Gateway configuration completed!"
+# Add JWT plugin
+echo "Setting up JWT authentication..."
+
+# Add JWT plugin for JWT validation
+curl -s -X POST http://kong:8001/plugins \
+  --data name=jwt \
+  --data config.claims_to_verify=exp
+
+# Create a consumer for the microservices
+curl -s -X POST http://kong:8001/consumers \
+  --data username=microservice-clients
+
+# Create a JWT credential with the same parameters as in Auth service
+curl -s -X POST http://kong:8001/consumers/microservice-clients/jwt \
+  --data algorithm=HS256 \
+  --data key=authservice \
+  --data secret=727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+
+# Exclude JWT authentication for Auth Service (login and register endpoints)
+curl -s -X POST http://kong:8001/services/auth-service/plugins \
+  --data name=request-transformer \
+  --data config.remove.headers=Authorization
+
+# Disable JWT for Auth service
+curl -s -X POST http://kong:8001/services/auth-service/plugins \
+  --data name=jwt \
+  --data config.enabled=false
+
+echo "Kong API Gateway configuration completed with JWT authentication!"

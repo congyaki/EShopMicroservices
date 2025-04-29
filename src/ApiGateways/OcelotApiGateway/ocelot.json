@@ -6,7 +6,7 @@
       "EnableRateLimiting": true,
       "Period": "1s",
       "PeriodTimespan": 1,
-      "Limit": 10,
+      "Limit": 50,
       "HttpStatusCode": 429
     },
     "LoadBalancerOptions": {
@@ -14,11 +14,11 @@
       "Key": "",
       "Expiry": 0
     },
-    "ServiceDiscoveryProvider": {
-      "Host": "consul",
-      "Port": 8500,
-      "Type": "Consul"
-    }
+    //"ServiceDiscoveryProvider": {
+    //  "Host": "consul",
+    //  "Port": 8500,
+    //  "Type": "Consul"
+    //}
   },
   "Routes": [
     {
