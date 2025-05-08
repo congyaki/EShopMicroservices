@@ -6,4 +6,6 @@ metadata:
 data:
   ASPNETCORE_ENVIRONMENT: "Production"
   ConnectionStrings__EventBusConnection: "rabbitmq"
-  EventBusSettings__HostAddress: "amqp://guest:guest@rabbitmq:5672"
+  MessageBroker__Host: "amqp://rabbitmq:5672"
+  MessageBroker__UserName: "guest"
+  MessageBroker__Password: "guest"

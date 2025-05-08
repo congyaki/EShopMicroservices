@@ -66,10 +66,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // Thêm dịch vụ Ocelot vào container DI
-builder.Services.AddOcelot(builder.Configuration)
+var ocelotBuilder = builder.Services.AddOcelot(builder.Configuration)
     .AddPolly()
-    .AddCacheManager(x => x.WithDictionaryHandle())
-    .AddConsul();
+    .AddCacheManager(x => x.WithDictionaryHandle());
+
+// Chỉ đăng ký Consul trong môi trường Development
+if (builder.Environment.IsDevelopment())
+{
+    ocelotBuilder.AddConsul();
+    Console.WriteLine("Consul service discovery đã được đăng ký trong môi trường Development");
+}
 
 // Add Health Checks for Ocelot
 builder.Services.AddHealthChecks()

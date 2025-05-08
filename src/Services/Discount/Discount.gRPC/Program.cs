@@ -23,34 +23,55 @@ var assembly = typeof(Program).Assembly;
 
 builder.Services.AddAutoMapper(assembly);
 
-// Cấu hình DiscountSeedingOptions
-builder.Services.Configure<DiscountSeedingOptions>(options =>
-{
-    builder.Configuration.GetSection("DiscountSeedingOptions").Bind(options);
-    // Cấu hình mặc định nếu không có trong appsettings
-    if (options.BatchSize <= 0) options.BatchSize = 200;
-    if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
-    if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
-});
-
-// Lấy service ID duy nhất cho instance này - sử dụng trong Leader Election
+// Lấy cấu hình chung cho tất cả môi trường - cần thiết cho cả Development và Production
 var serviceConfig = builder.Configuration.GetServiceConfig();
-var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+Console.WriteLine($"Configuring gRPC service: {serviceConfig.ServiceName} at {serviceConfig.ServiceAddress}:{serviceConfig.ServicePort}");
 
-// Register Consul client
-builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
+// Chỉ cấu hình seeding, Consul và Leader Election trong môi trường Development
+if (builder.Environment.IsDevelopment())
 {
-    consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
-}));
+    // Cấu hình DiscountSeedingOptions
+    builder.Services.Configure<DiscountSeedingOptions>(options =>
+    {
+        builder.Configuration.GetSection("DiscountSeedingOptions").Bind(options);
+        // Cấu hình mặc định nếu không có trong appsettings
+        if (options.BatchSize <= 0) options.BatchSize = 200;
+        if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
+        if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
+    });
+    
+    // Đăng ký Background Service để seed data - chỉ trong môi trường Development
+    builder.Services.AddHostedService<DiscountDataSeedingService>();
+    
+    // Tạo service ID duy nhất từ serviceConfig - chỉ cần trong môi trường Development
+    var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+    Console.WriteLine($"Generated unique service ID for Leader Election: {serviceId}");
+    
+    // Register Consul client - chỉ trong môi trường Development, sử dụng thông tin từ serviceConfig
+    builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
+    {
+        consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
+    }));
 
-// Đăng ký Leader Election Service sử dụng Factory pattern
-builder.Services.AddLeaderElection(builder.Configuration);
+    // Sử dụng Leader Election Factory để tự động chọn provider phù hợp - chỉ trong môi trường Development
+    builder.Services.AddLeaderElection(builder.Configuration, builder.Environment);
 
-// Đăng ký Background Service để seed data
-builder.Services.AddHostedService<DiscountDataSeedingService>();
-
-// Register ServiceDiscoveryHostedService
-builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
+    // Register ServiceDiscoveryHostedService - chỉ trong môi trường Development
+    builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
+    
+    Console.WriteLine("Consul client, Leader Election và Service Discovery đã được đăng ký trong môi trường Development");
+}
+else
+{
+    // Trong môi trường Production, sử dụng NoOpLeaderElectionService để tránh phụ thuộc vào Consul
+    builder.Services.AddSingleton<ILeaderElectionService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<NoOpLeaderElectionService>>();
+        return new NoOpLeaderElectionService(logger);
+    });
+    
+    Console.WriteLine($"Production mode: Using {serviceConfig.ServiceName} with NoOpLeaderElectionService");
+}
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

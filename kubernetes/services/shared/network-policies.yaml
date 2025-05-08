@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: eshop-microservices
+spec:
+  podSelector: {}
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: eshop-microservices
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: eshop-microservices
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway
+  namespace: eshop-microservices
+spec:
+  podSelector: {}
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kong
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kong

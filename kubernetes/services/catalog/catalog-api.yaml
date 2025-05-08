@@ -4,7 +4,7 @@ metadata:
   name: catalog-api
   namespace: eshop-microservices
 spec:
-  replicas: 3  # 3 instances như đã cấu hình trong Kong
+  replicas: 2
   selector:
     matchLabels:
       app: catalog-api
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: catalog-api
-        image: ${REGISTRY:-}catalogapi:${TAG:-latest}
+        image: duccongdo/catalogapi:latest
         ports:
         - containerPort: 80
         env:
@@ -25,9 +25,13 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Host=catalog-postgres;Database=CatalogDb;Username=catalog_user;Password=Catalog_P@ssw0rd"
-        - name: EventBusSettings__HostAddress
-          value: "amqp://guest:guest@rabbitmq:5672"
+          value: "Server=catalog-postgres;Port=5432;Database=CatalogDb;User Id=catalog_user;Password=Catalog_P@ssw0rd;Include Error Detail=true"
+        - name: ServiceConfig__ServiceName
+          value: "catalog-api"
+        - name: ServiceConfig__ServiceAddress
+          value: "http://catalog-api"
+        - name: ServiceConfig__ServicePort
+          value: "80"
         - name: JwtSettings__Key
           valueFrom:
             secretKeyRef:
@@ -43,13 +47,6 @@ spec:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Audience
-        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
-        - name: LeaderElection__Provider
-          value: "Kubernetes"
-        - name: LeaderElection__ServiceName
-          value: "catalog-api"
-        - name: LeaderElection__Namespace
-          value: "eshop-microservices"
         resources:
           requests:
             memory: "128Mi"
@@ -58,31 +55,15 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
-        # Mount ConfigMap vào container
-        volumeMounts:
-        - name: leader-election-config
-          mountPath: /app/leader-election-config
-      # Định nghĩa volumes  
-      volumes:
-      - name: leader-election-config
-        configMap:
-          name: leader-election-config
-          items:
-          - key: leader-election.json
-            path: leader-election.json
-          - key: catalog-service.json
-            path: catalog-service.json
 ---
 apiVersion: v1
 kind: Service

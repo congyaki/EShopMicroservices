@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: basket-api
-        image: ${REGISTRY:-}basketapi:${TAG:-latest}
+        image: duccongdo/basketapi:latest
         ports:
         - containerPort: 80
         env:
@@ -24,15 +24,23 @@ spec:
             configMapKeyRef:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
-        - name: ConnectionStrings__Database
-          value: "Host=basket-postgres;Database=BasketDb;Username=basket_user;Password=Basket_P@ssw0rd"
         - name: ConnectionStrings__Redis
           value: "basket-redis:6379"
-        - name: EventBusSettings__HostAddress
+        - name: MessageBroker__Host
           valueFrom:
             configMapKeyRef:
               name: eshop-config
-              key: EventBusSettings__HostAddress
+              key: MessageBroker__Host
+        - name: MessageBroker__UserName
+          valueFrom:
+            configMapKeyRef:
+              name: eshop-config
+              key: MessageBroker__UserName
+        - name: MessageBroker__Password
+          valueFrom:
+            configMapKeyRef:
+              name: eshop-config
+              key: MessageBroker__Password
         - name: gRPCSettings__DiscountUrl
           value: "http://discount-grpc"
         - name: JwtSettings__Key
@@ -50,13 +58,6 @@ spec:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Audience
-        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
-        - name: LeaderElection__Provider
-          value: "Kubernetes"
-        - name: LeaderElection__ServiceName
-          value: "basket-api"
-        - name: LeaderElection__Namespace
-          value: "eshop-microservices"
         resources:
           requests:
             memory: "128Mi"
@@ -65,31 +66,15 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
-        # Mount ConfigMap vào container
-        volumeMounts:
-        - name: leader-election-config
-          mountPath: /app/leader-election-config
-      # Định nghĩa volumes  
-      volumes:
-      - name: leader-election-config
-        configMap:
-          name: leader-election-config
-          items:
-          - key: leader-election.json
-            path: leader-election.json
-          - key: basket-service.json
-            path: basket-service.json
 ---
 apiVersion: v1
 kind: Service

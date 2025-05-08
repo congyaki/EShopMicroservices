@@ -8,6 +8,14 @@ config:
   second: 50
   policy: local
 ---
+# Add kong plugin for whitelisting public endpoints
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: public-whitelist
+  namespace: eshop-microservices
+plugin: request-transformer
+---
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:

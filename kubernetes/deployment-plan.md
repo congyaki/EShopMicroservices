@@ -2,12 +2,11 @@
 
 ## Tổng quan cấu trúc
 Hệ thống EShopMicroservices gồm các thành phần chính:
-- Kong API Gateway làm entrypoint
-- 4 microservices: Auth, Catalog, Basket, Ordering
-- Các cơ sở dữ liệu: PostgreSQL, Redis, SQL Server
+- Kong API Gateway làm entrypoint (các lựa chọn thay thế: Nginx, Ocelot, Traefik, YARP)
+- 5 microservices: Auth, Catalog, Basket, Discount, Ordering
+- Các cơ sở dữ liệu: PostgreSQL (Auth, Catalog), Redis (Basket), SQL Server (Ordering), SQLite (Discount)
 - Message broker: RabbitMQ
 - Monitoring: Prometheus, Grafana
-- Backup system
 
 ## Thứ tự triển khai
 
@@ -16,56 +15,131 @@ Hệ thống EShopMicroservices gồm các thành phần chính:
 # Tạo namespace
 kubectl apply -f namespace.yaml
 
-# Triển khai các resource dùng chung
-kubectl apply -f services/shared/
+# Kiểm tra namespace đã tạo thành công
+kubectl get namespaces | grep eshop-microservices
 ```
 
-### 2. Triển khai các database và message broker
+### 2. Triển khai shared resources
 ```bash
-# Auth database
+# Triển khai shared configmap và secrets
+kubectl apply -f services/shared/configmap.yaml
+kubectl apply -f services/shared/secret.yaml
+
+# Triển khai RabbitMQ cho message bus
+kubectl apply -f services/shared/rabbitmq.yaml
+
+# Kiểm tra các resources đã được tạo
+kubectl get configmap -n eshop-microservices
+kubectl get secret -n eshop-microservices
+kubectl get pods -n eshop-microservices -l app=rabbitmq
+```
+
+### 3. Triển khai các database
+```bash
+# Auth database (PostgreSQL)
 kubectl apply -f services/auth/auth-postgres.yaml
 
-# Catalog database
+# Catalog database (PostgreSQL)
 kubectl apply -f services/catalog/catalog-postgres.yaml
 
-# Basket Redis
+# Basket database (Redis)
 kubectl apply -f services/basket/basket-redis.yaml
 
-# Ordering database
+# Discount database (SQLite PVC)
+kubectl apply -f services/discount/discount-sqlite-pvc.yaml
+
+# Ordering database (SQL Server)
 kubectl apply -f services/ordering/ordering-sqlserver.yaml
+
+# Kiểm tra trạng thái của các database pods
+kubectl get pods -n eshop-microservices | grep -E 'postgres|redis|sqlserver'
+
+# Đợi các database sẵn sàng
+kubectl wait --for=condition=ready pod -l app=auth-postgres -n eshop-microservices --timeout=120s
+kubectl wait --for=condition=ready pod -l app=catalog-postgres -n eshop-microservices --timeout=120s
+kubectl wait --for=condition=ready pod -l app=basket-redis -n eshop-microservices --timeout=120s
+kubectl wait --for=condition=ready pod -l app=ordering-sqlserver -n eshop-microservices --timeout=120s
 ```
 
-### 3. Triển khai các microservices
+### 4. Triển khai các microservices
 ```bash
+# Discount Service (gRPC) - nên triển khai trước vì Basket service phụ thuộc vào nó
+kubectl apply -f services/discount/discount-grpc.yaml
+
+# Đợi Discount service sẵn sàng
+kubectl wait --for=condition=available deployment/discount-grpc -n eshop-microservices --timeout=120s
+
 # Auth Service
 kubectl apply -f services/auth/auth-api.yaml
 
-# Catalog Service
+# Catalog Service 
 kubectl apply -f services/catalog/catalog-api.yaml
 
-# Basket Service
+# Basket Service (phụ thuộc vào Discount service qua gRPC)
 kubectl apply -f services/basket/basket-api.yaml
 
-# Ordering Service
+# Ordering Service (phụ thuộc vào message broker và các service khác)
 kubectl apply -f services/ordering/ordering-api.yaml
+
+# Kiểm tra tất cả pods đã chạy
+kubectl get pods -n eshop-microservices
+kubectl get services -n eshop-microservices
 ```
 
-### 4. Triển khai Kong API Gateway
+### 5. Triển khai Network Policies và HPA
 ```bash
-# Tạo namespace cho Kong
-kubectl create namespace kong
+# Triển khai Network Policies
+kubectl apply -f services/shared/network-policies.yaml
 
-# Cài đặt Kong với Helm
+# Triển khai Horizontal Pod Autoscalers
+kubectl apply -f services/shared/hpa.yaml
+
+# Kiểm tra các policies và HPA
+kubectl get networkpolicies -n eshop-microservices
+kubectl get hpa -n eshop-microservices
+```
+
+### 6. Triển khai Kong API Gateway
+```bash
+# Tạo namespace cho API Gateway
+kubectl create namespace gateway
+
+# Cài đặt Helm (nếu chưa có)
+# Windows (PowerShell):
+if (!(Test-Path -Path "$env:ProgramData\chocolatey\choco.exe")) {
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+    choco install kubernetes-helm -y
+}
+
+# Xác nhận Helm đã được cài đặt
+helm version
+
+# Thêm Kong Helm repository
 helm repo add kong https://charts.konghq.com
 helm repo update
-helm install kong kong/kong -n kong -f infrastructure/kong/values.yaml
 
-# Triển khai cấu hình Kong
+# Cài đặt Kong API Gateway
+helm install kong kong/kong -n gateway -f infrastructure/kong/values.yaml --set ingressController.installCRDs=false
+
+# Kiểm tra trạng thái của các pods Kong
+kubectl get pods -n gateway
+
+# Đợi pods Kong khởi động hoàn tất
+kubectl wait --for=condition=ready pod -l app=kong -n gateway --timeout=180s
+
+# Triển khai cấu hình Kong plugins
 kubectl apply -f infrastructure/kong/kong-plugins.yaml
+
+# Triển khai Kong Ingress rules
 kubectl apply -f infrastructure/kong/kong-ingress.yaml
+
+# Kiểm tra các Ingress đã được tạo
+kubectl get ingress -n eshop-microservices
 ```
 
-### 5. Triển khai hệ thống giám sát
+### 7. Triển khai hệ thống giám sát
 ```bash
 # Tạo namespace
 kubectl create namespace monitoring
@@ -75,56 +149,133 @@ kubectl apply -f monitoring/prometheus.yaml
 
 # Triển khai Grafana
 kubectl apply -f monitoring/grafana.yaml
-```
 
-### 6. Thiết lập hệ thống backup
-```bash
-# Triển khai các job sao lưu tự động
-kubectl apply -f backup/database-backup.yaml
+# Kiểm tra trạng thái
+kubectl get pods -n monitoring
+kubectl get svc -n monitoring
 ```
 
 ## Kiểm tra hệ thống
 
 ```bash
-# Kiểm tra các pod
-kubectl get pods -n eshop-microservices
+# Kiểm tra tất cả pods
+kubectl get pods --all-namespaces | grep -E 'eshop-microservices|gateway|monitoring'
 
 # Kiểm tra các service
 kubectl get svc -n eshop-microservices
+kubectl get svc -n gateway
+kubectl get svc -n monitoring
 
-# Kiểm tra database đã sẵn sàng
-kubectl get pvc -n eshop-microservices
+# Kiểm tra API Gateway endpoint
+export GATEWAY_IP=$(kubectl get -o jsonpath="{.status.loadBalancer.ingress[0].ip}" service -n gateway kong-kong-proxy)
+echo "API Gateway URL: http://$GATEWAY_IP"
 
-# Kiểm tra Kong API Gateway
-kubectl get pods -n kong
-kubectl get svc -n kong
+# Test các endpoints
+curl -v http://$GATEWAY_IP/auth-service/swagger/index.html
+curl -v http://$GATEWAY_IP/catalog-service/swagger/index.html
+curl -v http://$GATEWAY_IP/basket-service/swagger/index.html
+curl -v http://$GATEWAY_IP/ordering-service/swagger/index.html
+```
 
-# Kiểm tra URL của Kong Gateway
-export KONG_PROXY_IP=$(kubectl get -o jsonpath="{.status.loadBalancer.ingress[0].ip}" service -n kong kong-proxy)
-echo "Kong Gateway URL: http://$KONG_PROXY_IP"
+## Troubleshooting
+
+### Vấn đề với ContainerCreating
+Khi các pod bị kẹt ở trạng thái ContainerCreating, kiểm tra chi tiết:
+```bash
+kubectl describe pod <pod-name> -n eshop-microservices
+```
+
+Các lỗi phổ biến và cách giải quyết:
+
+1. **ConfigMap không tồn tại**: `MountVolume.SetUp failed for volume "xxx-config" : configmap "xxx-config" not found`
+   ```bash
+   # Kiểm tra và triển khai ConfigMap thiếu
+   kubectl get configmap -n eshop-microservices
+   kubectl apply -f services/shared/configmap.yaml
+   ```
+
+2. **Secret không tồn tại**: `Secret "xxx" not found`
+   ```bash
+   kubectl get secrets -n eshop-microservices
+   kubectl apply -f services/shared/secret.yaml
+   ```
+
+3. **PersistentVolumeClaim không tồn tại**: `persistentvolumeclaim "discount-sqlite-data" not found`
+   ```bash
+   kubectl apply -f services/discount/discount-sqlite-pvc.yaml
+   kubectl get pvc -n eshop-microservices
+   ```
+
+4. **ReadinessProbe gRPC errors**: Lỗi với readinessProbe trong discount-grpc.yaml
+   ```bash
+   # Sửa readinessProbe thành dạng đơn giản hơn
+   kubectl edit deployment discount-grpc -n eshop-microservices
+   
+   # Thay readinessProbe thành tcpSocket:
+   readinessProbe:
+     tcpSocket:
+       port: 80
+     initialDelaySeconds: 15
+     periodSeconds: 10
+   ```
+
+5. **Database chưa sẵn sàng**: Service không thể kết nối đến database
+   ```bash
+   # Kiểm tra trạng thái database
+   kubectl get pods -n eshop-microservices | grep -E 'postgres|redis|sqlserver'
+   kubectl logs <database-pod-name> -n eshop-microservices
+   
+   # Đảm bảo database đã sẵn sàng trước khi triển khai service
+   kubectl wait --for=condition=ready pod -l app=auth-postgres -n eshop-microservices
+   ```
+
+### Vấn đề với kết nối giữa các service
+Kiểm tra DNS và network policies:
+```bash
+# Kiểm tra kết nối giữa các service
+kubectl exec -it <pod-name> -n eshop-microservices -- curl <service-name>:<port>/health
+
+# Kiểm tra cấu hình service
+kubectl describe service <service-name> -n eshop-microservices
+
+# Kiểm tra logs của service
+kubectl logs <pod-name> -n eshop-microservices
+```
+
+### Các lệnh debug hữu ích
+```bash
+# Khởi động lại một deployment
+kubectl rollout restart deployment/<deployment-name> -n eshop-microservices
+
+# Kiểm tra event logs
+kubectl get events -n eshop-microservices --sort-by='.lastTimestamp'
+
+# Kiểm tra lỗi trong các pods
+kubectl get pods -n eshop-microservices -o wide | grep -v Running
+
+# Truy cập shell của container để debug
+kubectl exec -it <pod-name> -n eshop-microservices -- /bin/bash
 ```
 
 ## Dọn dẹp hệ thống
 
 ```bash
-# Xóa Kong API Gateway
-helm uninstall kong -n kong
-
-# Xóa microservices
-kubectl delete -f services/auth/
-kubectl delete -f services/catalog/
-kubectl delete -f services/basket/
-kubectl delete -f services/ordering/
-kubectl delete -f services/shared/
+# Xóa API Gateway
+helm uninstall kong -n gateway
+kubectl delete namespace gateway
 
 # Xóa monitoring
 kubectl delete -f monitoring/
+kubectl delete namespace monitoring
 
-# Xóa backup
-kubectl delete -f backup/
+# Xóa microservices và databases
+kubectl delete -f services/ordering/
+kubectl delete -f services/basket/
+kubectl delete -f services/catalog/
+kubectl delete -f services/auth/
+kubectl delete -f services/discount/
+kubectl delete -f services/shared/
 
 # Xóa namespace
 kubectl delete -f namespace.yaml
-kubectl delete namespace kong
-kubectl delete namespace monitoring
 ```

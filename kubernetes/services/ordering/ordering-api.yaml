@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ordering-api
-        image: ${REGISTRY:-}orderingapi:${TAG:-latest}
+        image: duccongdo/orderingapi:latest
         ports:
         - containerPort: 80
         env:
@@ -25,12 +25,30 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Server=ordering-sqlserver;Database=OrderDb;User Id=sa;Password=Order_P@ssw0rd;TrustServerCertificate=True"
-        - name: EventBusSettings__HostAddress
+          value: "Server=ordering-sqlserver,1433;Database=OrderDb;User Id=sa;Password=Ordering_P@ssw0rd123;Encrypt=False;TrustServerCertificate=True"
+        - name: ServiceConfig__ServiceName
+          value: "ordering-api"
+        - name: ServiceConfig__ServiceAddress
+          value: "http://ordering-api"
+        - name: ServiceConfig__ServicePort
+          value: "80"
+        - name: FeatureManagement__OrderFullfilment
+          value: "false"
+        - name: MessageBroker__Host
           valueFrom:
             configMapKeyRef:
               name: eshop-config
-              key: EventBusSettings__HostAddress
+              key: MessageBroker__Host
+        - name: MessageBroker__UserName
+          valueFrom:
+            configMapKeyRef:
+              name: eshop-config
+              key: MessageBroker__UserName
+        - name: MessageBroker__Password
+          valueFrom:
+            configMapKeyRef:
+              name: eshop-config
+              key: MessageBroker__Password
         - name: JwtSettings__Key
           valueFrom:
             secretKeyRef:
@@ -46,13 +64,6 @@ spec:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Audience
-        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
-        - name: LeaderElection__Provider
-          value: "Kubernetes"
-        - name: LeaderElection__ServiceName
-          value: "ordering-api"
-        - name: LeaderElection__Namespace
-          value: "eshop-microservices"
         resources:
           requests:
             memory: "128Mi"
@@ -61,31 +72,15 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
-        # Mount ConfigMap vào container
-        volumeMounts:
-        - name: leader-election-config
-          mountPath: /app/leader-election-config
-      # Định nghĩa volumes  
-      volumes:
-      - name: leader-election-config
-        configMap:
-          name: leader-election-config
-          items:
-          - key: leader-election.json
-            path: leader-election.json
-          - key: ordering-service.json
-            path: ordering-service.json
 ---
 apiVersion: v1
 kind: Service

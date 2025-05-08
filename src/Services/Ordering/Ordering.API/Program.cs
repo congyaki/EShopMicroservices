@@ -9,8 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddApplicationServices(builder.Configuration)
     .AddInfrastructureServices(builder.Configuration)
-    .AddApiServices(builder.Configuration);
-
+    .AddApiServices(builder.Configuration, builder.Environment);
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -27,7 +26,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     
-    // Safe database migration with leader election
+    // Safe database migration with leader election - Chỉ thực hiện ở môi trường Development
     app.MigrateDatabaseSafely(async serviceProvider =>
     {
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
@@ -41,8 +40,6 @@ if (app.Environment.IsDevelopment())
         logger.LogInformation("Database migration completed");
     });
 }
-
-//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

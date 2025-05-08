@@ -4,7 +4,7 @@ metadata:
   name: discount-grpc
   namespace: eshop-microservices
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: discount-grpc
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: discount-grpc
-        image: ${REGISTRY:-}discountgrpc:${TAG:-latest}
+        image: duccongdo/discountgrpc:latest
         ports:
         - containerPort: 80
         env:
@@ -25,58 +25,39 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Data Source=discount-sqlite"
+          value: "Data Source=/app/data/discountdb"
         - name: ServiceConfig__ServiceName
           value: "discount-service"
         - name: ServiceConfig__ServiceAddress
           value: "http://discount-grpc"
         - name: ServiceConfig__ServicePort
           value: "80"
-        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
-        - name: LeaderElection__Provider
-          value: "Kubernetes"
-        - name: LeaderElection__ServiceName
-          value: "discount-grpc"
-        - name: LeaderElection__Namespace
-          value: "eshop-microservices"
+        - name: Kestrel__EndpointDefaults__Protocols
+          value: "Http2"
+        volumeMounts:
+        - name: discount-sqlite-data
+          mountPath: /app/data
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "50m"
-          limits:
             memory: "128Mi"
             cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
         readinessProbe:
-          httpGet:
-            path: /
+          tcpSocket:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          httpGet:
-            path: /
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
-        # Mount ConfigMap vào container
-        volumeMounts:
-        - name: leader-election-config
-          mountPath: /app/leader-election-config
-        - name: sqlite-data
-          mountPath: /app/data
-      # Định nghĩa volumes  
       volumes:
-      - name: leader-election-config
-        configMap:
-          name: leader-election-config
-          items:
-          - key: leader-election.json
-            path: leader-election.json
-          - key: discount-service.json
-            path: discount-service.json
-      - name: sqlite-data
-        persistentVolumeClaim:
-          claimName: discount-sqlite-data
+        - name: discount-sqlite-data
+          persistentVolumeClaim:
+            claimName: discount-sqlite-data
 ---
 apiVersion: v1
 kind: Service
@@ -89,16 +70,3 @@ spec:
   ports:
   - port: 80
     targetPort: 80
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: discount-sqlite-data
-  namespace: eshop-microservices
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-  storageClassName: standard

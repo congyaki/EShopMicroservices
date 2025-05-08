@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: auth-api
-        image: ${REGISTRY:-}authapi:${TAG:-latest}
+        image: duccongdo/authapi:latest
         ports:
         - containerPort: 80
         env:
@@ -25,34 +25,46 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Host=auth-postgres;Database=AuthDb;Username=auth_user;Password=Auth_P@ssw0rd"
-        - name: EventBusSettings__HostAddress
-          valueFrom:
-            configMapKeyRef:
-              name: eshop-config
-              key: EventBusSettings__HostAddress
-        - name: JwtSettings__Key
+          value: "Server=auth-postgres;Port=5432;Database=AuthDb;User Id=auth_user;Password=Auth_P@ssw0rd;Include Error Detail=true"
+        - name: Jwt__Key
           valueFrom:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Key
-        - name: JwtSettings__Issuer
+        - name: Jwt__Issuer
           valueFrom:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Issuer
-        - name: JwtSettings__Audience
+        - name: Jwt__Audience
           valueFrom:
             secretKeyRef:
               name: eshop-secrets
               key: JwtSettings__Audience
-        # Thêm cấu hình Leader Election provider để sử dụng Kubernetes
-        - name: LeaderElection__Provider
-          value: "Kubernetes"
-        - name: LeaderElection__ServiceName
+        - name: Jwt__ExpiryInMinutes
+          value: "30"
+        - name: ServiceConfig__ServiceName
           value: "auth-api"
-        - name: LeaderElection__Namespace
-          value: "eshop-microservices"
+        - name: ServiceConfig__ServiceAddress
+          value: "http://auth-api"
+        - name: ServiceConfig__ServicePort
+          value: "80"
+        - name: IpRateLimiting__EnableEndpointRateLimiting
+          value: "true"
+        - name: IpRateLimiting__StackBlockedRequests
+          value: "false"
+        - name: IpRateLimiting__RealIpHeader
+          value: "X-Real-IP"
+        - name: IpRateLimiting__ClientIdHeader
+          value: "X-ClientId"
+        - name: IpRateLimiting__HttpStatusCode
+          value: "429"
+        - name: IpRateLimiting__GeneralRules__0__Endpoint
+          value: "*"
+        - name: IpRateLimiting__GeneralRules__0__Period
+          value: "10s"
+        - name: IpRateLimiting__GeneralRules__0__Limit
+          value: "10"
         resources:
           requests:
             memory: "128Mi"
@@ -61,31 +73,15 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
-        # Mount ConfigMap vào container
-        volumeMounts:
-        - name: leader-election-config
-          mountPath: /app/leader-election-config
-      # Định nghĩa volumes  
-      volumes:
-      - name: leader-election-config
-        configMap:
-          name: leader-election-config
-          items:
-          - key: leader-election.json
-            path: leader-election.json
-          - key: auth-service.json
-            path: auth-service.json
 ---
 apiVersion: v1
 kind: Service

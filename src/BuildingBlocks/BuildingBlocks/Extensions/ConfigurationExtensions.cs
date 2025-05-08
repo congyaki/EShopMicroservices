@@ -17,8 +17,9 @@ namespace BuildingBlocks.Extensions
                 ServiceId = configuration["ServiceConfig:ServiceId"] ?? Guid.NewGuid().ToString(),
                 ServiceAddress = configuration["ServiceConfig:ServiceAddress"],
                 ServicePort = int.Parse(configuration["ServiceConfig:ServicePort"]),
-                ConsulHost = configuration["ServiceConfig:ConsulHost"],
-                ConsulPort = int.Parse(configuration["ServiceConfig:ConsulPort"])
+                
+                ConsulHost = configuration["ServiceConfig:ConsulHost"] ?? "localhost",
+                ConsulPort = int.TryParse(configuration["ServiceConfig:ConsulPort"], out var consulPort) ? consulPort : 8500
             };
         }
     }

@@ -67,29 +67,60 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 // Đăng ký AuthSeedData
 builder.Services.AddScoped<AuthSeedData>();
 
-// Đăng ký AuthSeedingOptions từ cấu hình
-builder.Services.Configure<AuthSeedingOptions>(options => {
-    if (options.BatchSize <= 0) options.BatchSize = 200;
-    if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
-    if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
-});
-
-// Lấy service ID duy nhất cho instance này - sử dụng trong Leader Election
+// Lấy cấu hình chung cho tất cả môi trường - cần thiết cho cả Development và Production
 var serviceConfig = builder.Configuration.GetServiceConfig();
-var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+Console.WriteLine($"Configuring service: {serviceConfig.ServiceName} at {serviceConfig.ServiceAddress}:{serviceConfig.ServicePort}");
 
-// Register Consul client
-builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
+// Chỉ sử dụng seeding, Consul và Leader Election trong môi trường Development
+if (builder.Environment.IsDevelopment())
 {
-    consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
-}));
+    // Đăng ký AuthSeedingOptions từ cấu hình
+    builder.Services.Configure<AuthSeedingOptions>(options => {
+        if (options.BatchSize <= 0) options.BatchSize = 200;
+        if (options.DelayBetweenBatchesMs <= 0) options.DelayBetweenBatchesMs = 100;
+        if (options.StartupDelaySeconds <= 0) options.StartupDelaySeconds = 5;
+    });
+    
+    // Đăng ký AuthDataSeedingService làm background service - chỉ Development
+    builder.Services.AddHostedService<AuthDataSeedingService>();
+    
+    // Tạo service ID duy nhất từ serviceConfig - chỉ cần trong môi trường Development
+    var serviceId = $"{serviceConfig.ServiceName}-{Guid.NewGuid()}";
+    Console.WriteLine($"Generated unique service ID for Leader Election: {serviceId}");
 
-// Đăng ký Leader Election Service sử dụng Factory để tự động chọn provider phù hợp
-builder.Services.AddLeaderElection(builder.Configuration);
+    // Register Consul client với thông tin từ serviceConfig
+    builder.Services.AddSingleton<IConsulClient>(p => new ConsulClient(consulConfig =>
+    {
+        consulConfig.Address = new Uri($"http://{serviceConfig.ConsulHost}:{serviceConfig.ConsulPort}");
+    }));
+
+    // Đăng ký Leader Election Service sử dụng Factory để tự động chọn provider phù hợp
+    builder.Services.AddLeaderElection(builder.Configuration, builder.Environment);
+    
+    Console.WriteLine("Consul client và Leader Election đã được đăng ký trong môi trường Development");
+    
+    // Chỉ đăng ký Consul client và ServiceDiscoveryHostedService trong môi trường Development
+    builder.Services.AddSingleton<IConsulClient>(sp => new ConsulClient(config =>
+    {
+        var serviceConfiguration = sp.GetRequiredService<IConfiguration>().GetServiceConfig();
+        config.Address = new Uri($"http://{serviceConfiguration.ConsulHost}:{serviceConfiguration.ConsulPort}");
+    }));
+
+    builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
+}
+else
+{
+    // Trong môi trường Production, sử dụng NoOpLeaderElectionService
+    builder.Services.AddSingleton<ILeaderElectionService>(sp =>
+    {
+        var logger = sp.GetRequiredService<ILogger<NoOpLeaderElectionService>>();
+        return new NoOpLeaderElectionService(logger);
+    });
+    
+    Console.WriteLine($"Production mode: Using {serviceConfig.ServiceName} with NoOpLeaderElectionService");
+}
 
 // Đăng ký AuthDataSeedingService làm background service
-builder.Services.AddHostedService<AuthDataSeedingService>();
-
 builder.Services.AddHealthChecks()
     .AddCheck("database", () =>
     {
@@ -142,16 +173,6 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOrUser", policy => policy.RequireRole("Admin", "User"));
 });
 
-// Add to each microservice's Program.cs
-builder.Services.AddSingleton<IConsulClient>(sp => new ConsulClient(config =>
-{
-    var serviceConfiguration = sp.GetRequiredService<IConfiguration>().GetServiceConfig();
-    config.Address = new Uri($"http://{serviceConfiguration.ConsulHost}:{serviceConfiguration.ConsulPort}");
-}));
-
-builder.Services.AddHostedService<ServiceDiscoveryHostedService>();
-
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -159,6 +180,9 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    
+    // Chỉ thực hiện migration trong môi trường Development
+    app.MigrateAuthDatabase();
 }
 
 // Sử dụng middleware rate limiting (phải được gọi trước các middleware xử lý request khác)
@@ -204,7 +228,5 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-
-app.MigrateAuthDatabase();
 
 app.Run();

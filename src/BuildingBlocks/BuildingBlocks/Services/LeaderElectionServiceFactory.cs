@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using k8s;
 using System;
 using Consul;
+using Microsoft.Extensions.Hosting;
 
 namespace BuildingBlocks.Services
 {
@@ -17,38 +17,25 @@ namespace BuildingBlocks.Services
         /// </summary>
         public static IServiceCollection AddLeaderElection(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHostEnvironment hostEnvironment)
         {
             // Đọc cấu hình từ appsettings.json
             var leaderElectionConfig = configuration.GetSection("LeaderElection");
-            var providerType = leaderElectionConfig["Provider"] ?? "Consul";
+            var isEnabled = leaderElectionConfig.GetValue<bool>("Enabled", true);
             var serviceName = leaderElectionConfig["ServiceName"] ?? "unknown-service";
             
             // Tạo một ID duy nhất cho mỗi instance
             var serviceId = $"{serviceName}-{Guid.NewGuid()}";
 
-            if (string.Equals(providerType, "Kubernetes", StringComparison.OrdinalIgnoreCase))
+            // Nếu đang chạy trong môi trường Production (Kubernetes) hoặc Leader Election bị vô hiệu hóa
+            if (!hostEnvironment.IsDevelopment() || !isEnabled)
             {
-                // Sử dụng Kubernetes Leader Election trong môi trường production
-                services.AddSingleton<IKubernetes>(sp =>
-                {
-                    // Trong Kubernetes, sử dụng in-cluster config
-                    var config = KubernetesClientConfiguration.InClusterConfig();
-                    return new Kubernetes(config);
-                });
-
+                // Sử dụng NoOpLeaderElectionService để vô hiệu hóa Leader Election trong Production
                 services.AddSingleton<ILeaderElectionService>(sp =>
                 {
-                    var namespace_ = leaderElectionConfig["Namespace"] ?? "default";
-                    var k8sClient = sp.GetRequiredService<IKubernetes>();
-                    var logger = sp.GetRequiredService<ILogger<KubernetesLeaderElectionService>>();
-                    
-                    return new KubernetesLeaderElectionService(
-                        k8sClient, 
-                        serviceName, 
-                        serviceId, 
-                        namespace_, 
-                        logger);
+                    var logger = sp.GetRequiredService<ILogger<NoOpLeaderElectionService>>();
+                    return new NoOpLeaderElectionService(logger);
                 });
             }
             else
