@@ -330,6 +330,8 @@ kubectl exec -it <pod-name> -n eshop-microservices -- /bin/bash
 helm uninstall kong -n gateway
 kubectl delete namespace gateway
 
+kubectl delete ingress --all -n eshop-microservices
+
 # Xóa monitoring
 kubectl delete -f monitoring/
 kubectl delete namespace monitoring
