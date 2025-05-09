@@ -61,6 +61,30 @@ kubectl wait --for=condition=ready pod -l app=basket-redis -n eshop-microservice
 kubectl wait --for=condition=ready pod -l app=ordering-sqlserver -n eshop-microservices --timeout=120s
 ```
 
+### 3.1. Triển khai Database Migration và Seed Data
+```bash
+# Tạo ConfigMap chứa các script SQL để migration và seed data
+kubectl apply -f migrations/db-migrations-config.yaml
+
+# Triển khai Job để thực thi migration và seed data
+kubectl apply -f migrations/database-migrator-job.yaml
+
+# Kiểm tra trạng thái của job
+kubectl get jobs -n eshop-microservices
+
+# Đợi Job hoàn thành
+kubectl wait --for=condition=complete job/database-migrator-job -n eshop-microservices --timeout=300s
+
+# Kiểm tra logs của job để xác nhận migration đã thành công
+kubectl logs job/database-migrator-job -n eshop-microservices
+```
+
+Tất cả migration và seed data được thực hiện thông qua Kubernetes Job có tên database-migrator-job. Job này sẽ:
+1. Sử dụng ConfigMap chứa các script SQL
+2. Cài đặt các công cụ cần thiết (PostgreSQL client, SQL Server tools, SQLite)
+3. Thực thi migration và seed data cho tất cả database
+4. Chỉ chạy một lần duy nhất khi triển khai hệ thống
+
 ### 4. Triển khai các microservices
 ```bash
 # Discount Service (gRPC) - nên triển khai trước vì Basket service phụ thuộc vào nó
@@ -177,6 +201,24 @@ curl -v http://$GATEWAY_IP/basket-service/swagger/index.html
 curl -v http://$GATEWAY_IP/ordering-service/swagger/index.html
 ```
 
+## Xác nhận kết quả Database Migration và Seed Data
+
+Sau khi migration job hoàn thành, bạn có thể kiểm tra dữ liệu trong các database:
+
+```bash
+# Kiểm tra Auth database
+kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=auth-postgres -o name | head -n 1) -n eshop-microservices -- psql -U auth_user -d AuthDb -c "SELECT * FROM \"Users\" LIMIT 5;"
+
+# Kiểm tra Catalog database
+kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=catalog-postgres -o name | head -n 1) -n eshop-microservices -- psql -U catalog_user -d CatalogDb -c "SELECT COUNT(*) FROM \"Products\";"
+
+# Kiểm tra Ordering database
+kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=ordering-sqlserver -o name | head -n 1) -n eshop-microservices -- /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Ordering_P@ssw0rd123 -Q "SELECT * FROM Customers"
+
+# Kiểm tra Discount database (khó hơn vì là SQLite trong container)
+kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=discount-grpc -o name | head -n 1) -n eshop-microservices -- sqlite3 /app/data/discountdb "SELECT * FROM Coupons;"
+```
+
 ## Troubleshooting
 
 ### Vấn đề với ContainerCreating
@@ -229,6 +271,30 @@ Các lỗi phổ biến và cách giải quyết:
    kubectl wait --for=condition=ready pod -l app=auth-postgres -n eshop-microservices
    ```
 
+### Vấn đề khi Migration Job gặp lỗi
+
+Nếu Job migration không hoàn thành hoặc gặp lỗi:
+
+```bash
+# Kiểm tra trạng thái job
+kubectl get jobs -n eshop-microservices
+
+# Xem logs chi tiết
+kubectl logs job/database-migrator-job -n eshop-microservices
+
+# Nếu job bị lỗi, xóa và tạo lại
+kubectl delete job database-migrator-job -n eshop-microservices
+kubectl apply -f migrations/database-migrator-job.yaml
+
+# Nếu job bị mắc kẹt trong trạng thái ContainerCreating, xem mô tả pod
+kubectl describe pod -l job-name=database-migrator-job -n eshop-microservices
+```
+
+Các vấn đề thường gặp:
+1. **ConfigMap không tồn tại**: Đảm bảo ConfigMap db-migrations-config đã được tạo
+2. **Container không thể cài đặt công cụ**: Kiểm tra kết nối mạng của pod
+3. **Lỗi kết nối database**: Đảm bảo các database đang chạy và sẵn sàng
+
 ### Vấn đề với kết nối giữa các service
 Kiểm tra DNS và network policies:
 ```bash
@@ -276,6 +342,7 @@ kubectl delete -f services/auth/
 kubectl delete -f services/discount/
 kubectl delete -f services/shared/
 
-# Xóa namespace
+# Xóa migration job và configmap
+kubectl delete -f migrations/
 kubectl delete -f namespace.yaml
 ```

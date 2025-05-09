@@ -16,6 +16,7 @@ metadata:
   namespace: eshop-microservices
 plugin: request-transformer
 ---
+# JWT Authentication plugin
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
@@ -33,12 +34,19 @@ metadata:
   namespace: eshop-microservices
 username: microservice-clients
 ---
-apiVersion: configuration.konghq.com/v1
-kind: KongConsumerJWTAuth
+# JWT Credentials
+apiVersion: v1
+kind: Secret
 metadata:
   name: microservice-clients-jwt
   namespace: eshop-microservices
-consumerRef: microservice-clients
-algorithm: HS256
-key: authservice
-secret: 727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a
+  labels:
+    konghq.com/credential: jwt
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/consumer: microservice-clients
+type: Opaque
+stringData:
+  key: "authservice"
+  algorithm: "HS256"
+  secret: "727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"

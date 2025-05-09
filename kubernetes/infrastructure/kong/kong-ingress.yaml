@@ -19,36 +19,6 @@ spec:
             port:
               number: 80
 ---
-# Specific ingress for public auth endpoints (login and register)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: auth-public-endpoints-ingress
-  namespace: eshop-microservices
-  annotations:
-    konghq.com/strip-path: "false"
-    kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "rate-limiting"
-    konghq.com/methods: "POST"
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /auth-service/api/Auth/login
-        pathType: Exact
-        backend:
-          service:
-            name: auth-api
-            port:
-              number: 80
-      - path: /auth-service/api/Auth/register
-        pathType: Exact
-        backend:
-          service:
-            name: auth-api
-            port:
-              number: 80
----
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
