@@ -33,4 +33,4 @@ postgresql:
     database: kong
 ingressController:
   enabled: true
-  installCRDs: true
+  installCRDs: false

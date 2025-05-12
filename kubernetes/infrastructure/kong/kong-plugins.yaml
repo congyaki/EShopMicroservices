@@ -34,17 +34,18 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: jwt-auth
-  namespace: eshop-microservices
+  namespace: gateway
 plugin: jwt
 config:
   claims_to_verify:
   - exp
+  key_claim_name: iss
 ---
 apiVersion: configuration.konghq.com/v1
 kind: KongConsumer
 metadata:
   name: microservice-clients
-  namespace: eshop-microservices
+  namespace: gateway
 username: microservice-clients
 ---
 # JWT Credentials
@@ -52,7 +53,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: microservice-clients-jwt
-  namespace: eshop-microservices
+  namespace: gateway
   labels:
     konghq.com/credential: jwt
   annotations:
@@ -63,3 +64,4 @@ stringData:
   key: "authservice"
   algorithm: "HS256"
   secret: "727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"
+  iss: "authservice"

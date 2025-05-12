@@ -180,53 +180,92 @@ data:
             'Paid', 2000.00, GETDATE(), 'System'
         );
         
-        -- Add order items
-        INSERT INTO [OrderItems] ([Id], [OrderId], [ProductId], [Quantity], [Price], [CreatedAt], [CreatedBy])
+        -- Add order items        INSERT INTO [OrderItems] ([Id], [OrderId], [ProductId], [Quantity], [Price], [CreatedAt], [CreatedBy])
         VALUES 
         (NEWID(), @OrderId1, @ProductId1, 1, 1200.00, GETDATE(), 'System'),
         (NEWID(), @OrderId1, @ProductId2, 1, 800.00, GETDATE(), 'System');
     END
 
   catalog-db-migration.sql: |
-    -- Migration script for Catalog database (PostgreSQL)
-    CREATE TABLE IF NOT EXISTS "Products" (
-      "Id" uuid NOT NULL,
-      "Name" varchar(100) NOT NULL,
-      "Description" text NULL,
-      "Price" decimal(18,2) NOT NULL,
-      "CategoryId" uuid NOT NULL,
-      "ImageFile" varchar(255) NULL,
-      "CreatedAt" timestamp with time zone NULL,
-      CONSTRAINT "PK_Products" PRIMARY KEY ("Id")
-    );
+    -- Migration script for Catalog database (PostgreSQL) using Marten ORM
     
-    CREATE TABLE IF NOT EXISTS "Categories" (
-      "Id" uuid NOT NULL,
-      "Name" varchar(100) NOT NULL,
-      CONSTRAINT "PK_Categories" PRIMARY KEY ("Id")
-    );
+    -- Kiểm tra xem bảng mt_doc_product đã tồn tại chưa, nếu chưa thì tạo bảng
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mt_doc_product') THEN
+            -- Tạo bảng Marten document nếu chưa tồn tại
+            CREATE TABLE mt_doc_product (
+                id uuid NOT NULL PRIMARY KEY,
+                data jsonb NOT NULL,
+                mt_last_modified timestamp with time zone DEFAULT transaction_timestamp(),
+                mt_version uuid NOT NULL DEFAULT md5(random()::text || clock_timestamp()::text)::uuid,
+                mt_dotnet_type text NOT NULL
+            );
+            
+            -- Tạo index để tìm kiếm hiệu quả trên dữ liệu JSON
+            CREATE INDEX idx_mt_doc_product_name ON mt_doc_product USING gin ((data -> 'Name'));
+            CREATE INDEX idx_mt_doc_product_price ON mt_doc_product USING gin ((data -> 'Price'));
+            CREATE INDEX idx_mt_doc_product_category ON mt_doc_product USING gin ((data -> 'Category'));
+        END IF;
+    END
+    $$;
     
-    -- Seed Categories if empty
-    INSERT INTO "Categories" ("Id", "Name")
-    SELECT 'c9d4c053-49b6-410c-bc78-2d54a9991870'::uuid, 'Electronics'
-    WHERE NOT EXISTS (SELECT 1 FROM "Categories" WHERE "Name" = 'Electronics');
-    
-    INSERT INTO "Categories" ("Id", "Name")
-    SELECT '3d490a70-94ce-4d15-9494-5248280c2ce3'::uuid, 'Clothing'
-    WHERE NOT EXISTS (SELECT 1 FROM "Categories" WHERE "Name" = 'Clothing');
-    
-    -- Seed Products if empty
-    INSERT INTO "Products" ("Id", "Name", "Description", "Price", "CategoryId", "ImageFile", "CreatedAt")
-    SELECT 'b9a3a9bd-2429-4b51-b3dd-5d5fe815c29d'::uuid, 'IPhone X', 'New Apple Mobile Phone', 950.00, 'c9d4c053-49b6-410c-bc78-2d54a9991870'::uuid, 'product-1.png', CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM "Products" WHERE "Name" = 'IPhone X');
-    
-    INSERT INTO "Products" ("Id", "Name", "Description", "Price", "CategoryId", "ImageFile", "CreatedAt")
-    SELECT '72dd3be5-5505-43a0-9edc-2275ea8ade4e'::uuid, 'Samsung S21', 'New Samsung Mobile Phone', 850.00, 'c9d4c053-49b6-410c-bc78-2d54a9991870'::uuid, 'product-2.png', CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM "Products" WHERE "Name" = 'Samsung S21');
-    
-    INSERT INTO "Products" ("Id", "Name", "Description", "Price", "CategoryId", "ImageFile", "CreatedAt")
-    SELECT '1286f9e6-47d4-4993-9ce2-7e4c54f02a9e'::uuid, 'Adidas Shirt', 'Comfortable sports shirt', 60.00, '3d490a70-94ce-4d15-9494-5248280c2ce3'::uuid, 'product-3.png', CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM "Products" WHERE "Name" = 'Adidas Shirt');
+    -- Xóa dữ liệu cũ (nếu cần) và thêm dữ liệu mới trực tiếp vào bảng Marten
+    DO $$
+    DECLARE
+        phone_id uuid := 'b9a3a9bd-2429-4b51-b3dd-5d5fe815c29d';
+        samsung_id uuid := '72dd3be5-5505-43a0-9edc-2275ea8ade4e';
+        shirt_id uuid := '1286f9e6-47d4-4993-9ce2-7e4c54f02a9e';
+    BEGIN
+        -- Xóa dữ liệu cũ trong bảng Marten nếu có
+        DELETE FROM mt_doc_product WHERE true;
+        
+        -- Thêm IPhone X
+        INSERT INTO mt_doc_product (id, data, mt_dotnet_type)
+        SELECT 
+            phone_id,
+            jsonb_build_object(
+                'Id', phone_id,
+                'Name', 'IPhone X',
+                'Category', ARRAY['Electronics'],
+                'Description', 'New Apple Mobile Phone',
+                'ImageFile', 'product-1.png',
+                'Price', 950.00
+            ),
+            'Catalog.API.Models.Product, Catalog.API'
+        WHERE NOT EXISTS (SELECT 1 FROM mt_doc_product WHERE id = phone_id);
+        
+        -- Thêm Samsung S21
+        INSERT INTO mt_doc_product (id, data, mt_dotnet_type)
+        SELECT 
+            samsung_id,
+            jsonb_build_object(
+                'Id', samsung_id,
+                'Name', 'Samsung S21',
+                'Category', ARRAY['Electronics'],
+                'Description', 'New Samsung Mobile Phone',
+                'ImageFile', 'product-2.png',
+                'Price', 850.00
+            ),
+            'Catalog.API.Models.Product, Catalog.API'
+        WHERE NOT EXISTS (SELECT 1 FROM mt_doc_product WHERE id = samsung_id);
+        
+        -- Thêm Adidas Shirt
+        INSERT INTO mt_doc_product (id, data, mt_dotnet_type)
+        SELECT 
+            shirt_id,
+            jsonb_build_object(
+                'Id', shirt_id,
+                'Name', 'Adidas Shirt',
+                'Category', ARRAY['Clothing'],
+                'Description', 'Comfortable sports shirt',
+                'ImageFile', 'product-3.png',
+                'Price', 60.00
+            ),
+            'Catalog.API.Models.Product, Catalog.API'
+        WHERE NOT EXISTS (SELECT 1 FROM mt_doc_product WHERE id = shirt_id);
+    END
+    $$;
 
   discount-db-migration.sql: |
     -- Migration script for Discount database (SQLite)

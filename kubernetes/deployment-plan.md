@@ -12,11 +12,11 @@ Hệ thống EShopMicroservices gồm các thành phần chính:
 
 ### 1. Thiết lập môi trường cơ bản
 ```bash
-# Tạo namespace
-kubectl apply -f namespace.yaml
+# Tạo các namespaces cần thiết (eshop-microservices và gateway)
+kubectl apply -f namespaces.yaml
 
-# Kiểm tra namespace đã tạo thành công
-kubectl get namespaces | grep eshop-microservices
+# Kiểm tra các namespace đã tạo thành công
+kubectl get namespaces | grep -E 'eshop-microservices|gateway'
 ```
 
 ### 2. Triển khai shared resources
@@ -125,8 +125,7 @@ kubectl get hpa -n eshop-microservices
 
 ### 6. Triển khai Kong API Gateway
 ```bash
-# Tạo namespace cho API Gateway
-kubectl create namespace gateway
+# Namespace gateway đã được tạo trong bước 1 (namespaces.yaml)
 
 # Cài đặt Helm (nếu chưa có)
 # Windows (PowerShell):
@@ -330,6 +329,10 @@ kubectl exec -it <pod-name> -n eshop-microservices -- /bin/bash
 helm uninstall kong -n gateway
 kubectl delete namespace gateway
 
+kubectl delete kongplugin --all -n eshop-microservices
+kubectl delete kongconsumer --all -n eshop-microservices
+kubectl delete secret microservice-clients-jwt -n eshop-microservices
+kubectl delete secret microservice-clients-jwt-credential -n eshop-microservices
 kubectl delete ingress --all -n eshop-microservices
 
 # Xóa monitoring
@@ -346,5 +349,5 @@ kubectl delete -f services/shared/
 
 # Xóa migration job và configmap
 kubectl delete -f migrations/
-kubectl delete -f namespace.yaml
+kubectl delete -f namespaces.yaml
 ```
