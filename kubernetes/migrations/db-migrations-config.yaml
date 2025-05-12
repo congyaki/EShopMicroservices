@@ -30,15 +30,20 @@ data:
           'AQAAAAEAACcQAAAAEITB0pPwidJ8VcCyLHSxR8vBFzx+3FG+L+BJmKvGUyaMr8TYTzZQX/wRrEA5poJ9BA==', 
           'User', 'user'
     WHERE NOT EXISTS (SELECT 1 FROM "Users" WHERE "Username" = 'user');
-
   ordering-db-migration.sql: |
     -- Migration script for Ordering database (SQL Server)
+    -- Kết nối đến master database trước
+    USE master;
+    GO
+    
     -- Đảm bảo database OrderingDb đã tồn tại
     IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'OrderingDb')
     BEGIN
         CREATE DATABASE OrderingDb;
     END
+    GO
     
+    -- Sử dụng database OrderingDb
     USE OrderingDb;
     GO
      
@@ -178,9 +183,9 @@ data:
             'John', 'Doe', 'john.doe@example.com', '123 Main St', 'USA', 'NY', '10001',
             'John Doe', '4111111111111111', '12/25', '123', 1,
             'Paid', 2000.00, GETDATE(), 'System'
-        );
-        
-        -- Add order items        INSERT INTO [OrderItems] ([Id], [OrderId], [ProductId], [Quantity], [Price], [CreatedAt], [CreatedBy])
+        );        
+        -- Add order items        
+        INSERT INTO [OrderItems] ([Id], [OrderId], [ProductId], [Quantity], [Price], [CreatedAt], [CreatedBy])
         VALUES 
         (NEWID(), @OrderId1, @ProductId1, 1, 1200.00, GETDATE(), 'System'),
         (NEWID(), @OrderId1, @ProductId2, 1, 800.00, GETDATE(), 'System');
@@ -321,10 +326,9 @@ data:
 
     # Wait for all databases to be ready with retry logic
     wait_for_connection "PGPASSWORD=Auth_P@ssw0rd pg_isready -h auth-postgres -U auth_user -d AuthDb -t 10" "Waiting for Auth Postgres database..."
+      wait_for_connection "PGPASSWORD=Catalog_P@ssw0rd pg_isready -h catalog-postgres -U catalog_user -d CatalogDb -t 10" "Waiting for Catalog Postgres database..."
     
-    wait_for_connection "PGPASSWORD=Catalog_P@ssw0rd pg_isready -h catalog-postgres -U catalog_user -d CatalogDb -t 10" "Waiting for Catalog Postgres database..."
-    
-    wait_for_connection "/opt/mssql-tools/bin/sqlcmd -S ordering-sqlserver -U sa -P Ordering_P@ssw0rd123 -Q \"SELECT 1\" -t 10" "Waiting for Ordering SQL Server database..."
+    wait_for_connection "/opt/mssql-tools18/bin/sqlcmd -S ordering-sqlserver -U sa -P Ordering_P@ssw0rd123 -Q \"SELECT 1\" -C -t 10" "Waiting for Ordering SQL Server database..."
 
     # Check if Discount SQLite file exists, if not create it
     mkdir -p /app/discount-data
@@ -337,10 +341,9 @@ data:
     # Run Catalog DB Migrations
     echo "Running Catalog DB migrations..."
     PGPASSWORD=Catalog_P@ssw0rd psql -h catalog-postgres -U catalog_user -d CatalogDb -a -f /scripts/catalog-db-migration.sql
-    
-    # Run Ordering DB Migrations
+      # Run Ordering DB Migrations
     echo "Running Ordering DB migrations..."
-    /opt/mssql-tools/bin/sqlcmd -S ordering-sqlserver -U sa -P Ordering_P@ssw0rd123 -i /scripts/ordering-db-migration.sql
+    /opt/mssql-tools18/bin/sqlcmd -S ordering-sqlserver -U sa -P Ordering_P@ssw0rd123 -i /scripts/ordering-db-migration.sql -C
     
     # Run Discount DB Migrations
     echo "Running Discount DB migrations..."
