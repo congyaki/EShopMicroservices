@@ -6,12 +6,12 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,eshop-microservices.auth-path-transformer-login,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.auth-path-transformer-login,gateway.jwt-auth"
 spec:
   rules:
   - http:
       paths:
-      - path: /auth-service/api/auth/login
+      - path: /auth-service/api/Auth/login
         pathType: Exact
         backend:
           service:
@@ -27,12 +27,12 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,eshop-microservices.auth-path-transformer-register,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.auth-path-transformer-register,gateway.jwt-auth"
 spec:
   rules:
   - http:
       paths:
-      - path: /auth-service/api/auth/register
+      - path: /auth-service/api/Auth/register
         pathType: Exact
         backend:
           service:
@@ -48,7 +48,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.jwt-auth"
 spec:
   rules:
   - http:
@@ -69,7 +69,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.jwt-auth"
 spec:
   rules:
   - http:
@@ -90,7 +90,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.jwt-auth"
 spec:
   rules:
   - http:
@@ -111,7 +111,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "eshop-microservices.rate-limiting,gateway.jwt-auth"
+    konghq.com/plugins: "gateway.rate-limiting,gateway.jwt-auth"
 spec:
   rules:
   - http:

@@ -2,7 +2,7 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: rate-limiting
-  namespace: eshop-microservices
+  namespace: gateway
 plugin: rate-limiting
 config:
   second: 50
@@ -13,7 +13,7 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: auth-path-transformer-login
-  namespace: eshop-microservices
+  namespace: gateway
 plugin: request-transformer
 config:
   replace:
@@ -23,7 +23,7 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: auth-path-transformer-register
-  namespace: eshop-microservices
+  namespace: gateway
 plugin: request-transformer
 config:
   replace:

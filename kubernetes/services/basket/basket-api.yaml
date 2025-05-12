@@ -26,6 +26,8 @@ spec:
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Redis
           value: "basket-redis:6379"
+        - name: ConnectionStrings__Database
+          value: "Server=basket-postgres;Port=5432;Database=BasketDb;User Id=postgres;Password=postgres;Include Error Detail=true"
         - name: MessageBroker__Host
           valueFrom:
             configMapKeyRef:
