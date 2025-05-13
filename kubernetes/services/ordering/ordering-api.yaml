@@ -25,7 +25,7 @@ spec:
               name: eshop-config
               key: ASPNETCORE_ENVIRONMENT
         - name: ConnectionStrings__Database
-          value: "Server=ordering-sqlserver,1433;Database=OrderDb;User Id=sa;Password=Ordering_P@ssw0rd123;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;Encrypt=False;TrustServerCertificate=True"
+          value: "Server=ordering-sqlserver,1433;Database=OrderingDb;User Id=sa;Password=Ordering_P@ssw0rd123;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=true;Encrypt=False;TrustServerCertificate=True"
         - name: ServiceConfig__ServiceName
           value: "ordering-api"
         - name: ServiceConfig__ServiceAddress

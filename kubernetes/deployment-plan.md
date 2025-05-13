@@ -12,11 +12,11 @@ Hệ thống EShopMicroservices gồm các thành phần chính:
 
 ### 1. Thiết lập môi trường cơ bản
 ```bash
-# Tạo các namespaces cần thiết (eshop-microservices và gateway)
+# Tạo các namespaces cần thiết (eshop-microservices, gateway và monitoring)
 kubectl apply -f namespaces.yaml
 
 # Kiểm tra các namespace đã tạo thành công
-kubectl get namespaces | grep -E 'eshop-microservices|gateway'
+kubectl get namespaces | grep -E 'eshop-microservices|gateway|monitoring'
 ```
 
 ### 2. Triển khai shared resources
@@ -165,18 +165,33 @@ kubectl get ingress -n eshop-microservices
 
 ### 7. Triển khai hệ thống giám sát
 ```bash
-# Tạo namespace
-kubectl create namespace monitoring
+# Namespace monitoring đã được tạo trong bước 1 (namespaces.yaml)
+
+# Triển khai RBAC cho Prometheus
+kubectl apply -f monitoring/prometheus-rbac.yaml
 
 # Triển khai Prometheus
 kubectl apply -f monitoring/prometheus.yaml
 
+# Triển khai Grafana Dashboard Provider
+kubectl apply -f monitoring/grafana-dashboard-provider.yaml
+
+# Triển khai Grafana Dashboards
+kubectl apply -f monitoring/grafana-dashboards.yaml
+
 # Triển khai Grafana
 kubectl apply -f monitoring/grafana.yaml
+
+# Triển khai Ingress cho monitoring
+kubectl apply -f monitoring/monitoring-ingress.yaml
 
 # Kiểm tra trạng thái
 kubectl get pods -n monitoring
 kubectl get svc -n monitoring
+
+# Đợi pods đã sẵn sàng
+kubectl wait --for=condition=ready pod -l app=prometheus -n monitoring --timeout=120s
+kubectl wait --for=condition=ready pod -l app=grafana -n monitoring --timeout=120s
 ```
 
 ## Kiểm tra hệ thống
@@ -191,14 +206,18 @@ kubectl get svc -n gateway
 kubectl get svc -n monitoring
 
 # Kiểm tra API Gateway endpoint
-export GATEWAY_IP=$(kubectl get -o jsonpath="{.status.loadBalancer.ingress[0].ip}" service -n gateway kong-kong-proxy)
+$GATEWAY_IP=$(kubectl get -o jsonpath="{.status.loadBalancer.ingress[0].ip}" service -n gateway kong-kong-proxy)
 echo "API Gateway URL: http://$GATEWAY_IP"
 
 # Test các endpoints
-curl -v http://$GATEWAY_IP/auth-service/swagger/index.html
-curl -v http://$GATEWAY_IP/catalog-service/swagger/index.html
-curl -v http://$GATEWAY_IP/basket-service/swagger/index.html
-curl -v http://$GATEWAY_IP/ordering-service/swagger/index.html
+curl -v "http://$GATEWAY_IP/auth-service/swagger/index.html"
+curl -v "http://$GATEWAY_IP/catalog-service/swagger/index.html"
+curl -v "http://$GATEWAY_IP/basket-service/swagger/index.html"
+curl -v "http://$GATEWAY_IP/ordering-service/swagger/index.html"
+
+# Kiểm tra endpoints monitoring
+echo "Prometheus URL: http://$GATEWAY_IP/prometheus"
+echo "Grafana URL: http://$GATEWAY_IP/grafana (username: admin, password: admin)"
 ```
 
 ## Xác nhận kết quả Database Migration và Seed Data
@@ -217,6 +236,60 @@ kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=ordering-sqlse
 
 # Kiểm tra Discount database (khó hơn vì là SQLite trong container)
 kubectl exec -it $(kubectl get pods -n eshop-microservices -l app=discount-grpc -o name | head -n 1) -n eshop-microservices -- sqlite3 /app/data/discountdb "SELECT * FROM Coupons;"
+```
+
+## Cấu hình Monitoring cho Microservices
+
+Để thu thập metrics từ các microservices .NET, cần thực hiện các bước sau:
+
+### 1. Thêm các annotations vào microservices
+Đảm bảo mỗi microservice có các annotations sau để Prometheus có thể phát hiện và thu thập metrics:
+
+```bash
+# Ví dụ cập nhật Catalog API
+kubectl patch deployment catalog-api -n eshop-microservices -p '
+{
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "prometheus.io/scrape": "true",
+          "prometheus.io/port": "80",
+          "prometheus.io/path": "/metrics"
+        }
+      }
+    }
+  }
+}'
+
+# Tương tự cho các services khác
+kubectl patch deployment auth-api -n eshop-microservices -p '{"spec":{"template":{"metadata":{"annotations":{"prometheus.io/scrape":"true","prometheus.io/port":"80","prometheus.io/path":"/metrics"}}}}}'
+kubectl patch deployment basket-api -n eshop-microservices -p '{"spec":{"template":{"metadata":{"annotations":{"prometheus.io/scrape":"true","prometheus.io/port":"80","prometheus.io/path":"/metrics"}}}}}'
+kubectl patch deployment ordering-api -n eshop-microservices -p '{"spec":{"template":{"metadata":{"annotations":{"prometheus.io/scrape":"true","prometheus.io/port":"80","prometheus.io/path":"/metrics"}}}}}'
+kubectl patch deployment discount-grpc -n eshop-microservices -p '{"spec":{"template":{"metadata":{"annotations":{"prometheus.io/scrape":"true","prometheus.io/port":"80","prometheus.io/path":"/metrics"}}}}}'
+```
+
+### 2. Kiểm tra Monitoring Dashboard
+
+Sau khi triển khai, bạn có thể:
+
+1. Truy cập Grafana đã được cấu hình sẵn tại http://<gateway-ip>/grafana
+   - Username: admin
+   - Password: admin
+
+2. Truy cập các dashboard mặc định đã được cấu hình:
+   - Kubernetes Pods Dashboard - Hiển thị metrics về các pods trong namespace eshop-microservices
+
+3. Thêm các dashboard mới cho .NET:
+   - Trong giao diện Grafana, chọn "Import" và nhập Dashboard ID: 10915 cho ASP.NET Core Dashboard
+   - Hoặc nhập Dashboard ID: 10427 cho .NET Core Dashboard
+
+### 3. Kiểm tra Alerting (nếu có)
+Kiểm tra các alerts đã được cấu hình trong Prometheus:
+```bash
+# Xem danh sách các alerts được cấu hình
+kubectl port-forward svc/prometheus -n monitoring 9090:9090
+# Sau đó truy cập http://localhost:9090/alerts trên trình duyệt
 ```
 
 ## Troubleshooting
@@ -308,6 +381,35 @@ kubectl describe service <service-name> -n eshop-microservices
 kubectl logs <pod-name> -n eshop-microservices
 ```
 
+### Vấn đề với Prometheus và Grafana
+
+Nếu hệ thống monitoring không hoạt động đúng:
+
+```bash
+# Kiểm tra trạng thái các pods monitoring
+kubectl get pods -n monitoring
+kubectl describe pod -l app=prometheus -n monitoring
+kubectl describe pod -l app=grafana -n monitoring
+
+# Kiểm tra logs
+kubectl logs -l app=prometheus -n monitoring
+kubectl logs -l app=grafana -n monitoring
+
+# Kiểm tra quyền truy cập của ServiceAccount Prometheus
+kubectl auth can-i get pods --as=system:serviceaccount:monitoring:prometheus -n eshop-microservices
+
+# Kiểm tra ConfigMaps
+kubectl get configmap -n monitoring
+kubectl describe configmap prometheus-config -n monitoring
+kubectl describe configmap grafana-datasources -n monitoring
+kubectl describe configmap grafana-dashboard-provider -n monitoring
+kubectl describe configmap grafana-dashboards -n monitoring
+
+# Kiểm tra kết nối từ Prometheus đến các targets
+kubectl port-forward svc/prometheus -n monitoring 9090:9090
+# Sau đó truy cập http://localhost:9090/targets trên trình duyệt để xem targets nào không hoạt động
+```
+
 ### Các lệnh debug hữu ích
 ```bash
 # Khởi động lại một deployment
@@ -337,7 +439,12 @@ kubectl delete secret microservice-clients-jwt-credential -n eshop-microservices
 kubectl delete ingress --all -n eshop-microservices
 
 # Xóa monitoring
-kubectl delete -f monitoring/
+kubectl delete -f monitoring/grafana.yaml
+kubectl delete -f monitoring/prometheus.yaml
+kubectl delete -f monitoring/prometheus-rbac.yaml
+kubectl delete -f monitoring/grafana-dashboard-provider.yaml
+kubectl delete -f monitoring/grafana-dashboards.yaml
+kubectl delete -f monitoring/monitoring-ingress.yaml
 kubectl delete namespace monitoring
 
 # Xóa microservices và databases
@@ -351,4 +458,3 @@ kubectl delete -f services/shared/
 # Xóa migration job và configmap
 kubectl delete -f migrations/
 kubectl delete -f namespaces.yaml
-```

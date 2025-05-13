@@ -22,8 +22,7 @@ spec:
           apt-get update
           ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
           echo "Tools installed successfully"
-            # Thêm đường dẫn SQL Server tools vào PATH
-          export PATH="$PATH:/opt/mssql-tools18/bin"
+          export PATH="$PATH:/opt/mssql-tools/bin"
           
           # Thực thi migration script
           echo "Starting migrations..."
