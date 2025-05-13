@@ -42,7 +42,7 @@ kubectl apply -f services/auth/auth-postgres.yaml
 # Catalog database (PostgreSQL)
 kubectl apply -f services/catalog/catalog-postgres.yaml
 # Basket database (PostgreSQL)
-kubectl apply -f ./kubernetes/services/basket/basket-postgres.yaml
+kubectl apply -f services/basket/basket-postgres.yaml
 # Basket database (Redis)
 kubectl apply -f services/basket/basket-redis.yaml
 
