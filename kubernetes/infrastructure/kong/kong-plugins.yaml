@@ -2,18 +2,17 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: rate-limiting
-  namespace: gateway
+  namespace: eshop-microservices
 plugin: rate-limiting
 config:
   second: 50
   policy: local
 ---
-# Auth service request path transformer for login and register
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: auth-path-transformer-login
-  namespace: gateway
+  namespace: eshop-microservices
 plugin: request-transformer
 config:
   replace:
@@ -23,37 +22,36 @@ apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: auth-path-transformer-register
-  namespace: gateway
+  namespace: eshop-microservices
 plugin: request-transformer
 config:
   replace:
     uri: "/api/auth/register"
 ---
-# JWT Authentication plugin
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:
   name: jwt-auth
-  namespace: gateway
+  namespace: eshop-microservices
 plugin: jwt
 config:
   claims_to_verify:
   - exp
   key_claim_name: iss
+  run_on_preflight: false
 ---
 apiVersion: configuration.konghq.com/v1
 kind: KongConsumer
 metadata:
   name: microservice-clients
-  namespace: gateway
+  namespace: eshop-microservices
 username: microservice-clients
 ---
-# JWT Credentials
 apiVersion: v1
 kind: Secret
 metadata:
   name: microservice-clients-jwt
-  namespace: gateway
+  namespace: eshop-microservices
   labels:
     konghq.com/credential: jwt
   annotations:
