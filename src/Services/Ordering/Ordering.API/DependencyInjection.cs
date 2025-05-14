@@ -6,6 +6,8 @@ using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Ordering.API.Data;
+using Prometheus;
+using Ordering.API.Metrics;
 
 namespace Ordering.API
 {
@@ -13,8 +15,29 @@ namespace Ordering.API
     {
         public static IServiceCollection AddApiServices (this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
         {
+            // Add Prometheus monitoring
+            services.AddPrometheusMonitoring("ordering-service");
+
+            // Add metrics background service
+            services.AddHostedService<OrderingMetricsHostedService>();
+
+            // Add CORS policy to allow Prometheus to scrape metrics
+            services.AddCors(options =>
+            {
+                options.AddPolicy("MetricsPolicy", corsBuilder =>
+                {
+                    corsBuilder
+                        .AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .WithExposedHeaders("Content-Type");
+                });
+            });
+
+            // Enhanced health checks with Prometheus metrics
             services.AddHealthChecks()
-                .AddSqlServer(configuration.GetConnectionString("Database")!);
+                .AddSqlServer(configuration.GetConnectionString("Database")!)
+                .ForwardToPrometheus();
 
             // Lấy cấu hình chung cho tất cả môi trường - cần thiết cho cả Development và Production
             var serviceConfig = configuration.GetServiceConfig();
@@ -73,12 +96,26 @@ namespace Ordering.API
 
         public static WebApplication UseApiServices (this WebApplication app)
         {
+            // Đầu tiên, sử dụng CORS để cho phép Prometheus scrape metrics
+            app.UseCors("MetricsPolicy");
+            
             app.UseMiddleware<CustomExceptionHandler>();
+
+            // Đăng ký Prometheus HTTP metrics middleware
+            app.UseHttpMetrics();
+            
+            // Configure health checks
             app.UseHealthChecks("/health",
                 new HealthCheckOptions()
                 {
                     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
                 });
+                
+            // Không gọi UseEndpoints ở đây vì nó phải được gọi sau UseRouting
+            // Thay vào đó, trả về app để các middleware khác được đăng ký đúng thứ tự
+            
+            // Initialize metrics
+            OrderingMetrics.InitializeMetrics(app.Services);
 
             return app;
         }

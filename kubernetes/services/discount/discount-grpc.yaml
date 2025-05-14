@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: discount-grpc
-        image: duccongdo/discountgrpc:latest
+        image: duccongdo/discountgrpc:2
         ports:
         - containerPort: 80
         env:

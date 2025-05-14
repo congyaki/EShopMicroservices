@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ordering-api
-        image: duccongdo/orderingapi:latest
+        image: duccongdo/orderingapi:3
         ports:
         - containerPort: 80
         env:

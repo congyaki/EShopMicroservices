@@ -12,12 +12,18 @@ spec:
     metadata:
       labels:
         app: catalog-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: catalog-api
-        image: duccongdo/catalogapi:latest
+        image: duccongdo/catalogapi:2
         ports:
         - containerPort: 80
+          name: http
+          protocol: TCP
         env:
         - name: ASPNETCORE_ENVIRONMENT
           valueFrom:
@@ -55,12 +61,14 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /metrics-probe
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /health
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -70,12 +78,17 @@ kind: Service
 metadata:
   name: catalog-api
   namespace: eshop-microservices
+  labels:
+    app: catalog-api
+    metrics: prometheus
 spec:
   selector:
     app: catalog-api
   ports:
   - port: 80
     targetPort: 80
+    name: http
+    protocol: TCP
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

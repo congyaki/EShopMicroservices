@@ -22,50 +22,50 @@ Dưới đây là các lệnh để build và push từng microservice. Các ima
 cd e:\WorkSpace\c_sharp\EShopMicroservices\src
 
 # Build image
-docker build -t duccongdo/catalogapi:latest -f Services/Catalog/Catalog.API/Dockerfile .
+docker build -t duccongdo/catalogapi:2 -f Services/Catalog/Catalog.API/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/catalogapi:latest
+docker push duccongdo/catalogapi:2
 ```
 
 ### 2. Auth API
 
 ```bash
 # Build image
-docker build -t duccongdo/authapi:latest -f Services/Auth/Auth.API/Dockerfile .
+docker build -t duccongdo/authapi:2 -f Services/Auth/Auth.API/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/authapi:latest
+docker push duccongdo/authapi:2
 ```
 
 ### 3. Basket API
 
 ```bash
 # Build image
-docker build -t duccongdo/basketapi:latest -f Services/Basket/Basket.API/Dockerfile .
+docker build -t duccongdo/basketapi:2 -f Services/Basket/Basket.API/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/basketapi:latest
+docker push duccongdo/basketapi:2
 ```
 
 ### 4. Discount gRPC
 
 ```bash
 # Build image
-docker build -t duccongdo/discountgrpc:latest -f Services/Discount/Discount.gRPC/Dockerfile .
+docker build -t duccongdo/discountgrpc:2 -f Services/Discount/Discount.gRPC/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/discountgrpc:latest
+docker push duccongdo/discountgrpc:2
 ```
 
 ### 5. Ordering API
 
 ```bash
 # Build image
-docker build -t duccongdo/orderingapi:latest -f Services/Ordering/Ordering.API/Dockerfile .
+docker build -t duccongdo/orderingapi:3 -f Services/Ordering/Ordering.API/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/orderingapi:latest
+docker push duccongdo/orderingapi:3
 ```
 
 ## API Gateways

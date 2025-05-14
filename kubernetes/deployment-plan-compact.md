@@ -25,16 +25,15 @@ kubectl get namespaces | grep -E 'eshop-microservices|gateway|monitoring'
 kubectl apply -f services/shared/configmap.yaml
 kubectl apply -f services/shared/secret.yaml
 
-# Triển khai RabbitMQ cho message bus
-kubectl apply -f services/shared/rabbitmq.yaml
 
 # Kiểm tra trạng thái
 kubectl get configmap,secret -n eshop-microservices
-kubectl get pods -n eshop-microservices -l app=rabbitmq
 ```
 
 ### 3. Triển khai các database
 ```bash
+# Triển khai RabbitMQ cho message bus
+kubectl apply -f services/shared/rabbitmq.yaml
 # Triển khai tất cả databases
 kubectl apply -f services/auth/auth-postgres.yaml
 kubectl apply -f services/catalog/catalog-postgres.yaml
@@ -42,6 +41,8 @@ kubectl apply -f services/basket/basket-postgres.yaml
 kubectl apply -f services/basket/basket-redis.yaml
 kubectl apply -f services/discount/discount-sqlite-pvc.yaml
 kubectl apply -f services/ordering/ordering-sqlserver.yaml
+
+kubectl get pods -n eshop-microservices -l app=rabbitmq
 
 # Kiểm tra trạng thái
 kubectl get pods -n eshop-microservices | grep -E 'postgres|redis|sqlserver'

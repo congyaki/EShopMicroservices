@@ -4,6 +4,9 @@ using Consul;
 using Discount.gRPC.Data;
 using Discount.gRPC.Services;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
+using Discount.gRPC.Metrics;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +25,39 @@ builder.Services.AddDbContext<DiscountContext>(opts =>
 var assembly = typeof(Program).Assembly;
 
 builder.Services.AddAutoMapper(assembly);
+
+// Add Prometheus monitoring
+builder.Services.AddPrometheusMonitoring("discount-service");
+
+// Add metrics background service
+builder.Services.AddHostedService<DiscountMetricsHostedService>();
+
+// Add CORS policy to allow Prometheus to scrape metrics
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MetricsPolicy", corsBuilder =>
+    {
+        corsBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Content-Type");
+    });
+});
+
+// Enhanced health checks with Prometheus metrics
+builder.Services.AddHealthChecks()
+    .AddCheck("database", () => {
+        using var scope = builder.Services.BuildServiceProvider().CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DiscountContext>();
+        try {
+            db.Database.CanConnect();
+            return HealthCheckResult.Healthy();
+        } catch (Exception ex) {
+            return HealthCheckResult.Unhealthy("Database connection failed", ex);
+        }
+    })
+    .ForwardToPrometheus();
 
 // Lấy cấu hình chung cho tất cả môi trường - cần thiết cho cả Development và Production
 var serviceConfig = builder.Configuration.GetServiceConfig();
@@ -74,14 +110,49 @@ else
 }
 
 var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+// Đầu tiên, sử dụng CORS để cho phép Prometheus scrape metrics
+app.UseCors("MetricsPolicy");
+
+// Sử dụng routing
+app.UseRouting();
+
+// Đăng ký Prometheus HTTP metrics middleware
+app.UseHttpMetrics();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapGrpcReflectionService();
 }
 
-// Configure the HTTP request pipeline.
+// Configure health checks and metrics endpoints
+app.UseEndpoints(endpoints =>
+{
+    // Đăng ký gRPC endpoints
+    endpoints.MapGrpcService<DiscountService>();
+    
+    // Đảm bảo metrics endpoint luôn được đăng ký đúng cách
+    endpoints.MapMetrics("/metrics").AllowAnonymous();
+    
+    // Thêm endpoint kiểm tra health của metrics
+    endpoints.MapGet("/metrics-probe", async context =>
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Metrics endpoint is working!");
+    });
+    
+    // Đăng ký health check endpoint
+    endpoints.MapHealthChecks("/health");
+    
+    // Map home page
+    endpoints.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+});
+
+// Configure database migration
 app.UseMigration();
-app.MapGrpcService<DiscountService>();
-app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client. To learn how to create a client, visit: https://go.microsoft.com/fwlink/?linkid=2086909");
+
+// Initialize metrics
+DiscountMetrics.InitializeMetrics(app.Services);
 
 app.Run();

@@ -2,6 +2,8 @@ using BuildingBlocks.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ordering.Infrastructure.Data;
+using Prometheus;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,8 +43,24 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseRouting();
 app.UseAuthorization();
 
-app.MapControllers();
+// Đăng ký endpoints cho metrics sau khi UseRouting đã được gọi
+app.UseEndpoints(endpoints =>
+{
+    // Đảm bảo metrics endpoint luôn được đăng ký đúng cách
+    endpoints.MapMetrics("/metrics").AllowAnonymous();
+    
+    // Thêm endpoint kiểm tra health của metrics
+    endpoints.MapGet("/metrics-probe", async context =>
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Metrics endpoint is working!");
+    });
+    
+    // Đăng ký controller endpoints
+    endpoints.MapControllers();
+});
 
 app.Run();

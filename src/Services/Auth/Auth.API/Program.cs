@@ -15,6 +15,8 @@ using BuildingBlocks.Extensions;
 using Auth.API.Data.Extensions;
 using Auth.API.Entities;
 using Microsoft.AspNetCore.Identity;
+using Prometheus;
+using Auth.API.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "AuthService:";
 });
+
+// Add Prometheus monitoring
+builder.Services.AddPrometheusMonitoring("auth-service");
+
+// Add metrics background service
+builder.Services.AddHostedService<AuthMetricsHostedService>();
 
 // Configure JWT authentication
 builder.Services.AddAuthentication(options =>
@@ -120,7 +128,27 @@ else
     Console.WriteLine($"Production mode: Using {serviceConfig.ServiceName} with NoOpLeaderElectionService");
 }
 
-// Đăng ký AuthDataSeedingService làm background service
+// Add CORS policy to allow Prometheus to scrape metrics
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MetricsPolicy", corsBuilder =>
+    {
+        corsBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Content-Type");
+    });
+    
+    options.AddPolicy("CorsPolicy",
+        policy => policy
+            .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://localhost:5001" })
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+});
+
+// Enhanced health checks with Prometheus metrics
 builder.Services.AddHealthChecks()
     .AddCheck("database", () =>
     {
@@ -136,7 +164,8 @@ builder.Services.AddHealthChecks()
             return HealthCheckResult.Unhealthy("Database connection failed", ex);
         }
     })
-    .AddCheck("self", () => HealthCheckResult.Healthy());
+    .AddCheck("self", () => HealthCheckResult.Healthy())
+    .ForwardToPrometheus();
 
 // Cấu hình AspNetCoreRateLimit
 
@@ -155,16 +184,6 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 
 // Nếu cần xử lý bất đồng bộ có thể dùng chiến lược xử lý như sau (tùy chọn)
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("CorsPolicy",
-        policy => policy
-            .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://localhost:5001" })
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials());
-});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -185,6 +204,9 @@ if (app.Environment.IsDevelopment())
     app.MigrateAuthDatabase();
 }
 
+// Đầu tiên, sử dụng CORS để cho phép Prometheus scrape metrics
+app.UseCors("MetricsPolicy");
+
 // Sử dụng middleware rate limiting (phải được gọi trước các middleware xử lý request khác)
 app.UseIpRateLimiting();
 
@@ -198,35 +220,64 @@ app.Use(async (context, next) =>
     context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
     context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
     context.Response.Headers.Add("Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'");
+        "default-src 'self'; script-src 'self'; " +
+        "style-src 'self'; img-src 'self' data:; " +
+        "font-src 'self'; connect-src 'self';");
+    
     await next();
 });
+
+// Đăng ký Prometheus HTTP metrics middleware
+app.UseHttpMetrics();
 
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = async (context, report) =>
+
+// Configure health checks with UI and metrics
+app.UseHealthChecks("/health",
+    new HealthCheckOptions
     {
-        context.Response.ContentType = "application/json";
-
-        var result = JsonSerializer.Serialize(new
+        ResponseWriter = async (context, report) =>
         {
-            status = report.Status.ToString(),
-            checks = report.Entries.Select(e => new
-            {
-                name = e.Key,
-                status = e.Value.Status.ToString(),
-                exception = e.Value.Exception != null ? e.Value.Exception.Message : null,
-                duration = e.Value.Duration.ToString()
-            })
-        });
+            context.Response.ContentType = "application/json";
+            
+            var result = JsonSerializer.Serialize(
+                new
+                {
+                    status = report.Status.ToString(),
+                    checks = report.Entries.Select(e => new
+                    {
+                        name = e.Key,
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description,
+                        exception = e.Value.Exception?.Message,
+                        duration = e.Value.Duration.ToString()
+                    })
+                });
+            
+            await context.Response.WriteAsync(result);
+        }
+    });
 
-        await context.Response.WriteAsync(result);
-    }
+// Đăng ký endpoints (bao gồm controllers và metrics)
+app.UseEndpoints(endpoints =>
+{
+    // Đăng ký controller endpoints
+    endpoints.MapControllers();
+    
+    // Đảm bảo metrics endpoint luôn được đăng ký đúng cách
+    endpoints.MapMetrics("/metrics").AllowAnonymous();
+    
+    // Thêm endpoint kiểm tra health của metrics
+    endpoints.MapGet("/metrics-probe", async context =>
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Metrics endpoint is working!");
+    });
 });
 
+// Initialize metrics
+AuthMetrics.InitializeMetrics(app.Services);
 
 app.Run();

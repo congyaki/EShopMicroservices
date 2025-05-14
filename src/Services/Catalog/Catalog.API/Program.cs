@@ -1,5 +1,6 @@
 using BuildingBlocks.Extensions;
 using Catalog.API.Data;
+using Catalog.API.Metrics;
 using FluentValidation;
 using HealthChecks.UI.Client;
 using Marten;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using BuildingBlocks.Services;
+using Prometheus;
+using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +32,35 @@ builder.Services.AddMarten(opts =>
 {
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
 }).UseLightweightSessions();
+
+// Add CORS policy to allow Prometheus to scrape metrics
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MetricsPolicy", corsBuilder =>
+    {
+        corsBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Content-Type");
+    });
+});
+
+// Add Prometheus monitoring
+builder.Services.AddPrometheusMonitoring("catalog-service");
+
+// Add metrics background service
+builder.Services.AddHostedService<CatalogMetricsHostedService>();
+
+// Add custom metrics for Catalog service
+builder.Services.AddCustomMetrics(metrics =>
+{
+    // Add any additional custom metrics that aren't already defined in CatalogMetrics
+    metrics.AddCounter(
+        "catalog_api_errors_total",
+        "Total number of API errors in Catalog service",
+        "error_type", "endpoint");
+});
 
 // Đăng ký và cấu hình CatalogSeeding options - chỉ trong môi trường Development
 if (builder.Environment.IsDevelopment())
@@ -68,8 +100,11 @@ else
 // Đăng ký CatalogInitialData cho seed data ban đầu
 builder.Services.AddScoped<CatalogInitialData>();
 
+// Enhanced health checks with Prometheus metrics
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!);
+    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy())
+    .ForwardToPrometheus();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -78,7 +113,22 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+// Important: Order matters for middleware!
+
+// Đầu tiên, sử dụng CORS để cho phép Prometheus scrape metrics
+app.UseCors("MetricsPolicy");
+
+// Sử dụng exception handler
 app.UseMiddleware<CustomExceptionHandler>();
+
+// Kích hoạt routing sớm trong pipeline
+app.UseRouting();
+
+// Đăng ký Prometheus HTTP metrics middleware
+app.UseHttpMetrics();
+
+// Authorize và Authentication (nếu cần)
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
@@ -104,12 +154,30 @@ if (app.Environment.IsDevelopment())
         logger.LogInformation("Database migration completed");
     });
 }
-   
+
+// Configure health checks với UI và metrics
 app.UseHealthChecks("/health",
     new HealthCheckOptions
     {
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
     });
+
+// Đăng ký endpoints (bao gồm controllers và metrics)
+app.UseEndpoints(endpoints =>
+{
+    // Đăng ký controller endpoints
+    endpoints.MapControllers();
+    
+    // Đảm bảo metrics endpoint luôn được đăng ký đúng cách
+    endpoints.MapMetrics("/metrics").AllowAnonymous();
+    
+    // Thêm endpoint kiểm tra health của metrics
+    endpoints.MapGet("/metrics-probe", async context =>
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Metrics endpoint is working!");
+    });
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -117,5 +185,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapControllers();
+// Initialize metrics that require service data
+CatalogMetrics.InitializeMetrics(app.Services);
+
 app.Run();

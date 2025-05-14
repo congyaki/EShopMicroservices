@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: basket-api
-        image: duccongdo/basketapi:latest
+        image: duccongdo/basketapi:2
         ports:
         - containerPort: 80
         env:
