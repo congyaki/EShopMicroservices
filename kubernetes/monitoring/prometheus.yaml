@@ -32,10 +32,10 @@ data:
         - source_labels: [__meta_kubernetes_pod_name]
           action: replace
           target_label: kubernetes_pod_name
-
+          
       - job_name: 'kong-metrics'
         static_configs:
-        - targets: ['kong-kong-metrics.gateway.svc.cluster.local:10254']
+        - targets: ['kong-kong-metrics.gateway.svc.cluster.local:10255']
         
       - job_name: 'eshop-services'
         kubernetes_sd_configs:
