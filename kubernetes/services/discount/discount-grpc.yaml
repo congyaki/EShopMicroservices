@@ -12,10 +12,14 @@ spec:
     metadata:
       labels:
         app: discount-grpc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "80"
     spec:
       containers:
       - name: discount-grpc
-        image: duccongdo/discountgrpc:2
+        image: duccongdo/discountgrpc:3
         ports:
         - containerPort: 80
         env:
@@ -45,12 +49,14 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /metrics-probe
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /metrics-probe
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -64,6 +70,10 @@ kind: Service
 metadata:
   name: discount-grpc
   namespace: eshop-microservices
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "80"
 spec:
   selector:
     app: discount-grpc

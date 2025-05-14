@@ -2,6 +2,10 @@ using BuildingBlocks.Messaging.MassTransit;
 using Discount.gRPC;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using BuildingBlocks.Extensions;
+using Prometheus;
+using Basket.API.Metrics;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,10 +50,30 @@ builder.Services.AddStackExchangeRedisCache(options =>
 //    builder.Services.InitializeMartenWith<CatalogInitialData>();
 //}
 
+// Add Prometheus monitoring
+builder.Services.AddPrometheusMonitoring("basket-service");
+
+// Add metrics background service
+builder.Services.AddHostedService<BasketMetricsHostedService>();
+
+// Add CORS policy to allow Prometheus to scrape metrics
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MetricsPolicy", corsBuilder =>
+    {
+        corsBuilder
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("Content-Type");
+    });
+});
+
 //Cross-Cutting Services
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
-    .AddRedis(builder.Configuration.GetConnectionString("Redis")!);
+    .AddRedis(builder.Configuration.GetConnectionString("Redis")!)
+    .ForwardToPrometheus();
 
 //gRPC Services
 builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
@@ -75,6 +99,15 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+// First, use CORS to allow Prometheus to scrape metrics
+app.UseCors("MetricsPolicy");
+
+// Use routing
+app.UseRouting();
+
+// Register Prometheus HTTP metrics middleware
+app.UseHttpMetrics();
+
 app.UseMiddleware<CustomExceptionHandler>();
 
 app.UseHealthChecks("/health",
@@ -82,21 +115,31 @@ app.UseHealthChecks("/health",
     {
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
     });
-//app.UseHealthChecks("/health",
-//    new HealthCheckOptions
-//    {
-//        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
-//    });
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
+// Configure endpoints with metrics
+app.UseEndpoints(endpoints =>
+{
+    // Ensure metrics endpoint is properly registered
+    endpoints.MapMetrics("/metrics").AllowAnonymous();
+    
+    // Add metrics probe endpoint
+    endpoints.MapGet("/metrics-probe", async context =>
+    {
+        context.Response.StatusCode = 200;
+        await context.Response.WriteAsync("Metrics endpoint is working!");
+    });
+    
+    // Map controllers
+    endpoints.MapControllers();
+});
 
-app.UseAuthorization();
-
-app.MapControllers();
+// Initialize metrics
+BasketMetrics.InitializeMetrics(app.Services);
 
 app.Run();

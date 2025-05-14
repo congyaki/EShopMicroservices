@@ -12,10 +12,14 @@ spec:
     metadata:
       labels:
         app: basket-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "80"
     spec:
       containers:
       - name: basket-api
-        image: duccongdo/basketapi:2
+        image: duccongdo/basketapi:3
         ports:
         - containerPort: 80
         env:
@@ -68,12 +72,14 @@ spec:
             memory: "256Mi"
             cpu: "200m"
         readinessProbe:
-          tcpSocket:
+          httpGet:
+            path: /health
             port: 80
           initialDelaySeconds: 15
           periodSeconds: 10
         livenessProbe:
-          tcpSocket:
+          httpGet:
+            path: /metrics-probe
             port: 80
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -83,6 +89,10 @@ kind: Service
 metadata:
   name: basket-api
   namespace: eshop-microservices
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "80"
 spec:
   selector:
     app: basket-api

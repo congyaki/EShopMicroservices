@@ -35,7 +35,7 @@ data:
 
       - job_name: 'kong-metrics'
         static_configs:
-        - targets: ['kong.kong.svc.cluster.local:8100']
+        - targets: ['kong-kong-metrics.gateway.svc.cluster.local:10254']
         
       - job_name: 'eshop-services'
         kubernetes_sd_configs:
@@ -46,7 +46,7 @@ data:
         relabel_configs:
         - source_labels: [__meta_kubernetes_service_name]
           action: keep
-          regex: .*-api
+          regex: .*-api|discount.grpc
         - source_labels: [__meta_kubernetes_service_name]
           target_label: service
           

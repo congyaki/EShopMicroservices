@@ -13,6 +13,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Additional configuration is required to successfully run gRPC on macOS.
 // For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
 
+// Configure Kestrel to support both HTTP/2 (for gRPC) and HTTP/1.1 (for metrics)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Setup a HTTP/2 endpoint without TLS for gRPC
+    options.ListenAnyIP(80, o => o.Protocols = 
+        Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2);
+});
+
 // Add services to the container.
 builder.Services.AddGrpc();
 builder.Services.AddGrpcReflection();

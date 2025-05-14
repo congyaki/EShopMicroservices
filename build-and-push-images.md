@@ -42,20 +42,20 @@ docker push duccongdo/authapi:2
 
 ```bash
 # Build image
-docker build -t duccongdo/basketapi:2 -f Services/Basket/Basket.API/Dockerfile .
+docker build -t duccongdo/basketapi:3 -f Services/Basket/Basket.API/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/basketapi:2
+docker push duccongdo/basketapi:3
 ```
 
 ### 4. Discount gRPC
 
 ```bash
 # Build image
-docker build -t duccongdo/discountgrpc:2 -f Services/Discount/Discount.gRPC/Dockerfile .
+docker build -t duccongdo/discountgrpc:3 -f Services/Discount/Discount.gRPC/Dockerfile .
 
 # Push image lên Docker Hub
-docker push duccongdo/discountgrpc:2
+docker push duccongdo/discountgrpc:3
 ```
 
 ### 5. Ordering API
