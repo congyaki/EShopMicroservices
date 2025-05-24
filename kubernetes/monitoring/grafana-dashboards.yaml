@@ -171,7 +171,7 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Total number of products in catalog",
-          "fill": 1,
+          "fill": 0,
           "fillGradient": 0,
           "gridPos": {
             "h": 16,
@@ -184,21 +184,21 @@ data:
           "legend": {
             "avg": false,
             "current": true,
-            "max": true,
+            "max": false,
             "min": false,
-            "show": true,
+            "show": false,
             "total": false,
             "values": true
           },
           "lines": true,
-          "linewidth": 3,
+          "linewidth": 2,
           "nullPointMode": "null",
           "options": {
             "dataLinks": []
           },
           "percentage": false,
-          "pointradius": 2,
-          "points": false,
+          "pointradius": 3,
+          "points": true,
           "renderer": "flot",
           "seriesOverrides": [],
           "spaceLength": 10,
@@ -208,7 +208,7 @@ data:
             {
               "expr": "catalog_total_products",
               "refId": "A",
-              "legendFormat": "Total Products"
+              "legendFormat": ""
             }
           ],
           "thresholds": [],
@@ -232,7 +232,7 @@ data:
           "yaxes": [
             {
               "format": "short",
-              "label": "Products",
+              "label": "",
               "logBase": 1,
               "max": null,
               "min": "0",

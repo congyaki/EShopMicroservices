@@ -38,7 +38,8 @@ config:
   claims_to_verify:
   - exp
   key_claim_name: iss
-  run_on_preflight: false
+  secret_is_base64: false
+  run_on_preflight: true
 ---
 apiVersion: configuration.konghq.com/v1
 kind: KongConsumer
@@ -62,4 +63,3 @@ stringData:
   key: "authservice"
   algorithm: "HS256"
   secret: "727410b36cdc4b5c8ac91011dd2083db8381aa7b07d245b787800a5e263f525a"
-  iss: "authservice"

@@ -69,7 +69,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "rate-limiting,jwt-auth"
+    konghq.com/plugins: "rate-limiting"
 spec:
   rules:
   - http:
@@ -90,7 +90,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "rate-limiting,jwt-auth"
+    konghq.com/plugins: "rate-limiting"
 spec:
   rules:
   - http:
@@ -111,7 +111,7 @@ metadata:
   annotations:
     konghq.com/strip-path: "true"
     kubernetes.io/ingress.class: "kong"
-    konghq.com/plugins: "rate-limiting,jwt-auth"
+    konghq.com/plugins: "rate-limiting"
 spec:
   rules:
   - http:

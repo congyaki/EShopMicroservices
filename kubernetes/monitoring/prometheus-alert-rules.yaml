@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+data:
+  alert-rules.yaml: |
+    groups:
+    - name: general-alerts
+      rules:
+      - alert: ServiceDown
+        expr: up{job="essential-services"} == 0 or up{job="essential-services"} == absent
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.service }} down"
+          description: "{{ $labels.instance }} của service {{ $labels.service }} đã down hoặc không phản hồi hơn 15 giây."
+    
+      - alert: HighCPUUsage
+        expr: process_cpu_seconds_total / on (instance) group_left () rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} có mức sử dụng CPU > 80% trong 5 phút."
+    
+      - alert: HighMemoryUsage
+        expr: sum by (instance) (container_memory_usage_bytes) / sum by (instance) (container_memory_max_usage_bytes) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} có mức sử dụng RAM > 80% trong 5 phút."
+    
+      - alert: HostOutOfDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes * 100) < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Host sắp hết không gian lưu trữ (< 10% available)"
+          description: "{{ $labels.instance }} còn dưới 10% không gian lưu trữ khả dụng."
+    
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency on {{ $labels.service }}"
+          description: "Thời gian phản hồi 95% của service {{ $labels.service }} > 1 giây."
+    
+    - name: eshop-specific-alerts
+      rules:
+      - alert: APIEndpointDown
+        expr: probe_success{job=~"eshop-services"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API endpoint down: {{ $labels.instance }}"
+          description: "API endpoint {{ $labels.instance }} không phản hồi trong 1 phút qua."
+    
+      - alert: OrderProcessingDelayed
+        expr: rate(order_processing_time_seconds_sum[5m]) / rate(order_processing_time_seconds_count[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Order processing delayed"
+          description: "Xử lý đơn hàng đang mất trung bình > 10 giây."
+    
+      - alert: PaymentFailureRate
+        expr: sum(rate(payment_failures_total[5m])) / sum(rate(payment_attempts_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High payment failure rate"
+          description: "Tỷ lệ thanh toán thất bại > 5% trong 5 phút qua."

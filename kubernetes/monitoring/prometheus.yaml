@@ -9,6 +9,15 @@ data:
       scrape_interval: 15s
       evaluation_interval: 15s
 
+    rule_files:
+      - /etc/prometheus/rules/alert-rules.yaml
+
+    alerting:
+      alertmanagers:
+      - static_configs:
+        - targets:
+          - alertmanager.monitoring.svc.cluster.local:9093
+
     scrape_configs:
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
@@ -49,6 +58,22 @@ data:
           regex: .*-api|discount.grpc
         - source_labels: [__meta_kubernetes_service_name]
           target_label: service
+        
+      # Thêm static configs cho các dịch vụ chính để luôn có targets ngay cả khi scale down
+      - job_name: 'essential-services'
+        static_configs:
+        - targets: 
+          - 'basket-api.eshop-microservices.svc.cluster.local:80'
+          - 'catalog-api.eshop-microservices.svc.cluster.local:80'
+          - 'auth-api.eshop-microservices.svc.cluster.local:80'
+          - 'ordering-api.eshop-microservices.svc.cluster.local:80'
+          - 'discount-grpc.eshop-microservices.svc.cluster.local:80'
+        metrics_path: /metrics
+        relabel_configs:
+        - source_labels: [__address__]
+          regex: (.*)-api\..*|(.*)\..*
+          target_label: service
+          replacement: $1$2
           
       - job_name: 'kubernetes-nodes'
         scheme: https
@@ -94,10 +119,12 @@ spec:
         - "--web.console.libraries=/usr/share/prometheus/console_libraries"
         - "--web.console.templates=/usr/share/prometheus/consoles"
         ports:
-        - containerPort: 9090
+        - containerPort: 9090        
         volumeMounts:
         - name: config-volume
           mountPath: /etc/prometheus/
+        - name: alert-rules-volume
+          mountPath: /etc/prometheus/rules/
         - name: prometheus-storage
           mountPath: /prometheus
         resources:
@@ -106,13 +133,16 @@ spec:
             cpu: 500m
           requests:
             memory: 256Mi
-            cpu: 200m
+            cpu: 200m      
       volumes:
       - name: config-volume
         configMap:
           name: prometheus-config
       - name: prometheus-storage
         emptyDir: {}
+      - name: alert-rules-volume
+        configMap:
+          name: prometheus-alert-rules
 ---
 apiVersion: v1
 kind: Service

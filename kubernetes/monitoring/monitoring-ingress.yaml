@@ -16,7 +16,7 @@ spec:
           service:
             name: grafana
             port:
-              number: 3000
+              number: 3000      
       - path: /prometheus
         pathType: Prefix
         backend:
@@ -24,3 +24,10 @@ spec:
             name: prometheus
             port:
               number: 9090
+      - path: /alertmanager
+        pathType: Prefix
+        backend:
+          service:
+            name: alertmanager
+            port:
+              number: 9093
