@@ -27,9 +27,6 @@ data:
         repeat_interval: 2h
 
     receivers:
-    - name: 'email-notifications'
-      email_configs:
-          receivers:
     - name: 'null'
 
     inhibit_rules:
